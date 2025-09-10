@@ -1,0 +1,7 @@
+Hannah Shaw
+CS536
+Park
+LAB1
+
+1. The reason that the origional version of the file did not correctly execute 'ls -l -a' is due to the way the function execlp handles the number of arguements. This function requires the number of arguements to be set by compile time, which is why it can execute 'ls' correctly when there are no arguements, but it does not know what to do with 'ls -l -a'. Changing the function to be execvp allows there to be a dynamic number of arguements, allowing for more complicated shell commands to be useable in our program.
+2. 
