@@ -5,42 +5,122 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <math.h>
 #include <string.h>
+#include <signal.h>
+#include <time.h>
+void alarmHandler(int sig){
+        printf("Client time out\n");
+        alarm(0);
+}
+int maximum(int values[], int n) {
+    int max = values[0];
+
+    for (int i = 1; i < n; i++) {
+        if (values[i] > max && values[i] != 0) {
+            max = values[i];
+        }
+    }
+    return max;
+}
+int minimum(int values[], int n) {
+    int min = values[0];
+
+    for (int i = 1; i < n; i++) {
+        if (values[i] < min && values[i] !=0) {
+            min = values[i];
+        }
+    }
+    return min;
+}
+int mean(int values[], int n){
+	int average = 0;
+	for (int i=0; i<n; i++){
+		average += values[i];
+	}
+	return average/n;
+}
+int stdv(int values[], int n){
+        int average = mean(values, n);
+	int s = 0;
+        for (int i=0; i<n; i++){
+                s += (average - values[i])*(average - values[i]);
+        }
+        return sqrt(s/n);
+}
 
 int main(int argc, char const* argv[]){
         if (argc != 6){
                 printf("please enter servip, portnum, secret, portnum2, and pcount");
                 exit(1);
         }
-    	char buffer[100];
-    	int sd, n;
-    	struct sockaddr_in serveraddr;
 
-	int number = rand()%1000
-	char message[10];
-	memcpy(message, secret, 6);
-	memcpy(message+6, number);
+	struct sigaction alarmAction;
+        alarmAction.sa_handler = alarmHandler;
+        alarmAction.sa_flags = 0;
+        sigemptyset(&alarmAction.sa_mask);
+    	sigaction(SIGALRM, &alarmAction, NULL);
 
+
+        const char * ip_addr = argv[1];
+        int pn = atoi(argv[2]);
+        const char * secret = argv[3];
+	int pn2 = atoi(argv[4]);
+	int pcount = atoi(argv[5]);
+
+	int values[pcount];
+	memset(values, 0, sizeof(values));
+	char buffer[100];
+    	int sd;
+    	struct sockaddr_in clientaddr, serveraddr;
+	
+	memset(&clientaddr, 0, sizeof(clientaddr));
     	memset(&serveraddr, 0, sizeof(serveraddr));
-    	serveraddr.sin_addr.s_addr = inet_addr("sIP");
+    	serveraddr.sin_addr.s_addr = inet_addr(ip_addr);
     	serveraddr.sin_port = htons(pn);
     	serveraddr.sin_family = AF_INET;
+	clientaddr.sin_port = htons(pn2);
+	clientaddr.sin_family = AF_INET;
+	clientaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     
     	//scoket()
     	sd = socket(AF_INET, SOCK_DGRAM, 0);
-    
-    	//connect()
-    	if(connect(sd, (struct sockaddr *)&serveraddr, sizeof(serveraddr)) < 0){
-        	printf("\n Error : Connect Failed \n");
-        	exit(0);
-    	}
+   
+	//bind()
+	if (bind(sd, (struct sockaddr*)&clientaddr, sizeof(clientaddr)) != 0){
+		printf("Binding failed, closing");
+		close(sd);
+		exit(1);
+	}
+	srand(time(NULL));
+	int number = rand()%1000;
+        char message[10];
+        memcpy(message, secret, 6);
+	printf("Begining to send %d ping messages\n", pcount);
+	for (int i=0; i<pcount; i++){
+        	//value = number+i	
+		//memcpy(message+6, , 4);
+		sprintf(message+6, "%d", number+i);
+		ualarm(123456, 0);
+		//sendto()
+    		if (sendto(sd, message, 10, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr)) < 1){
+			printf("sendfailure\n");
+		}
 	
-	//sendto()CHANGE 1024????????
-    	sendto(sd, message, 1024, 0, (struct sockaddr*)NULL, sizeof(serveraddr));
-    
-    	//recvfrom()
-    	recvfrom(sd, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL);
-    
-    	//close()
+    		//recvfrom()
+    		recvfrom(sd, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL);
+		if (atoi(buffer+6) == number+i){//not how you check the index
+			int val = ualarm(0, 0);
+			values[i] = val;
+		}
+	}
+	printf("Completed sending of ping messages\n");
+    	
+	printf("Minimum:\t\t%d\n", minimum(values, pcount));
+	printf("Maximum:\t\t%d\n", maximum(values, pcount));
+	printf("Mean:\t\t\t%d\n", mean(values, pcount));
+	printf("Standard Deviations:\t%d\n", stdv(values, pcount));
+	
+	//close()
     	close(sd);
 }
