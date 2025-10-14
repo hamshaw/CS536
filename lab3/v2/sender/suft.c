@@ -39,22 +39,20 @@ int main(int argc, char *argv[]){
         printf("error opening file");
     }
     fseek(file, 0, SEEK_END);
-    long filesize = ftell(file);
+    long int filesize = ftell(file);
     rewind(file);
     char *buffer = malloc(sizeof(char)*filesize +1);
     size_t bytesRead = fread(buffer, 1, filesize, file);
     buffer[bytesRead] = '\0';
     fclose(file);
-    //char message[10] = {"Boob\0"};
-	//bind()
-	//if ((bind = bind(sd, (struct sockaddr*)&serveraddr, sizeof(serveraddr))) == -1)
-	//	printf("error binding\n");
-    int maxfilesize = paramsProcessor(0);
-    int micropace = paramsProcessor(1);
-    int payloadsize = paramsProcessor(2);
+    int numpackets = filesize/payloadsize +1;
+    for (int i = 0; i < numpackets; i++){
+
+        if (sendto(sd, buffer+(i*payloadsize), payloadsize, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr)) == -1){
+            printf("send failure\n");
+        }
+        printf("sending packet #%d\n", i);
     
-    if (sendto(sd, buffer, bytesRead, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr)) == -1){
-        printf("send failure\n");
     }
     free(buffer);
 	
