@@ -14,6 +14,8 @@ int main(int argc, char *argv[]){
         }
     
     int pn = atoi(argv[1]);
+    int sd;
+    char buffer[100];
 
 	struct sockaddr_in serveraddr, clientaddr;
     memset(&serveraddr, 0, sizeof(serveraddr));
@@ -24,13 +26,18 @@ int main(int argc, char *argv[]){
 		printf("error creating socket\n");
 
 	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-        serveraddr.sin_port = htons(pn);
-        serveraddr.sin_family = AF_INET;
+    serveraddr.sin_port = htons(pn);
+    serveraddr.sin_family = AF_INET;
 
 	//bind()
-	if ((bind = bind(sd, (struct sockaddr*)&serveraddr, sizeof(serveraddr))) == -1)
-		printf("error binding\n");
-
-
-	return 1;
+	if ((bind = bind(sd, (struct sockaddr*)&serveraddr, sizeof(serveraddr))) == -1){
+        printf("error binding\n");
+        exit(-1);
+    }
+    if (recvfrom(sd, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL) == -1){
+	    printf("error recieving\n");
+        exit(-1);
+    }
+    printf("%s\n", buffer);
+    return 1;
 }
