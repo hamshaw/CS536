@@ -26,10 +26,11 @@ int main(int argc, char *argv[]){
 	if ((sd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
 		printf("error creating socket\n");
 
-	serveraddr.sin_addr.s_addr = inet_addr(ip_addr);;
+	serveraddr.sin_addr.s_addr = inet_addr(rcvip);
     serveraddr.sin_port = htons(pn);
     serveraddr.sin_family = AF_INET;
 
+    char message[10] = {"Boob\0"};
 	//bind()
 	//if ((bind = bind(sd, (struct sockaddr*)&serveraddr, sizeof(serveraddr))) == -1)
 	//	printf("error binding\n");

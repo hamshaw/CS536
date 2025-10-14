@@ -30,7 +30,7 @@ int main(int argc, char *argv[]){
     serveraddr.sin_family = AF_INET;
 
 	//bind()
-	if ((bind = bind(sd, (struct sockaddr*)&serveraddr, sizeof(serveraddr))) == -1){
+	if (bind(sd, (struct sockaddr*)&serveraddr, sizeof(serveraddr)) == -1){
         printf("error binding\n");
         exit(-1);
     }
