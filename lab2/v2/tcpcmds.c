@@ -55,14 +55,14 @@ int main(int argc, char const* argv[]){
 	}else{
 		printf("Correct secret: %s\n", buffer);
 		while(strcmp(buffer, "") != 0){
-		memset(buffer, 0, sizeof(buffer));
-		received = read(sock, buffer, 24);
+			memset(buffer, 0, sizeof(buffer));
+			received = read(sock, buffer, 24);
 		
-		//	memset(buffer, 0, sizeof(buffer));
-		int k = fork();
+			int k = fork();
                 	if (k==0) {
-                	// child code
-                        	if(execlp(buffer, buffer, NULL) == -1){        // if execution failed, terminate child
+                		// child code
+				dup2(sock, STDOUT_FILENO);
+				if (execlp(buffer, buffer, NULL) == -1){        // if execution failed, terminate child
                                 	printf("failed execution: %s\n", buffer);
 					exit(1);
 				}
@@ -71,8 +71,9 @@ int main(int argc, char const* argv[]){
                 	else {
                         	// parent code
                         	int status;
-				waitpid(k, &status, 0);               // block until child process terminates
-                	}}
+				waitpid(k, &status, 0);
+                	}
+		}
 	}
     	close(sock);
     	close(sd);

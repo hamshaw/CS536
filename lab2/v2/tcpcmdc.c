@@ -5,11 +5,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
-void alarmHandler(int sig){
-	printf("Client time out\n");
-	alarm(0);
-}
-
+#include "alarmHandler.h"
 
 int main(int argc, char const* argv[]){
 	//printf("len of argv: %d", argc);
@@ -17,7 +13,6 @@ int main(int argc, char const* argv[]){
                 printf("please enter socket number and secret\n");
                 exit(1);
         }
-	// signal(SIGALRM, alarmHandler);
 	struct sigaction alarmAction;
 	alarmAction.sa_handler = alarmHandler;
 	alarmAction.sa_flags = 0;
@@ -34,7 +29,9 @@ int main(int argc, char const* argv[]){
 	int sd;
 	struct sockaddr_in serv_addr;// = htons(atoi(argv[1]));
 	char buffer[25];
-    	if ((sd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    	
+	//socket()
+	if ((sd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         	printf("socket error\n");
         	exit(-1);
     	}
@@ -43,15 +40,17 @@ int main(int argc, char const* argv[]){
     	serv_addr.sin_port = htons(pn);
 
 	if (inet_pton(AF_INET, ip_addr, &serv_addr.sin_addr) <= 0) {
-        	printf("\nInvalid address/ Address not supported \n");
-        	return -1;
+        	printf("bad IP address \n");
+        	exit(-1);
     	}
 
+	//connect()
     	if ((status = connect(sd, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
         	printf("connect failed\n");
        		exit(-1);
     	}
   
+	//write()
 	write(sd, secret, strlen(secret));
     	char command[25];
 	char output[1024];
@@ -59,9 +58,10 @@ int main(int argc, char const* argv[]){
                 fgets(command, 24, stdin);
 
                 command[strlen(command)-1] = '\0';
-                write(sd, command, strlen(command));
+                
+		//write()
+		write(sd, command, strlen(command));
 		
-		//char output[1024];
         	ssize_t received;
 		memset(output, 0, sizeof(output));
 		//set alarm 3 sec

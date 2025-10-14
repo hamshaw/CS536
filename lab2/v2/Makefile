@@ -1,13 +1,12 @@
 all: server client objects
-server: fifocmds.c
-	gcc -o server fifocmds.c
-client: fifocmdc.c hasArguements.c pipeCloseHandler.c
-	gcc -o client fifocmdc.c hasArguements.c pipeCloseHandler.c
+server: tcpcmds.c
+	gcc -o server tcpcmds.c
+client: tcpcmdc.c alarmHandler.c
+	gcc -o client tcpcmdc.c alarmHandler.c
 
 objects:
-	gcc -c fifocmds.c -o fifocmds.o
-	gcc -c fifocmdc.c -o fifocmdc.o
-	gcc -c hasArguements.c -o hasArguements.o
-	gcc -c pipeCloseHandler.c -o pipeCloseHandler.o
+	gcc -c tcpcmds.c -o tcpcmds.o
+	gcc -c tcpcmdc.c -o tcpcmdc.o
+	gcc -c alarmHandler.c -o alarmHandler.o
 clean:
 	find . -type f ! -name "*.c" ! -name "*.h" ! -name "Makefile" -delete

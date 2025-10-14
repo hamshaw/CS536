@@ -62,8 +62,7 @@ int main(int argc, char const* argv[]){
 		int k = fork();
                 	if (k==0) {
                 	// child code
-				dup2(sock, STDOUT_FILENO);
-				if (execlp(buffer, buffer, NULL) == -1){        // if execution failed, terminate child
+                        	if(execlp(buffer, buffer, NULL) == -1){
                                 	printf("failed execution: %s\n", buffer);
 					exit(1);
 				}
@@ -72,8 +71,9 @@ int main(int argc, char const* argv[]){
                 	else {
                         	// parent code
                         	int status;
-				waitpid(k, &status, 0);               // block until child process terminates
-                	}}
+				waitpid(k, &status, 0);
+                	}
+		}
 	}
     	close(sock);
     	close(sd);
