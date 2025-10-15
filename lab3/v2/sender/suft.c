@@ -17,7 +17,7 @@ int main(int argc, char *argv[]){
     int sd;
     const char * rcvip = argv[1];
     int pn = atoi(argv[2]);
-    const char * filename = argv[3];
+    const char filename[] = "tm.txt";//argv[3];
 
 	struct sockaddr_in serveraddr, clientaddr;
     memset(&serveraddr, 0, sizeof(serveraddr));
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]){
     memcpy(metadata, filename, 6);
     memcpy(metadata+6, &filesize, 4);
     memcpy(metadata+10, &payloadsize, 4);
-    printf("%.*s\n", 14, metadata);
+    *(metadata+1) = 't';//FOR TESTING ONLY< REMOVE BEFORE SUBMISSION
     if (sendto(sd, metadata, 14, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr))==-1){
         printf("error sending meta data\n");
     }
@@ -57,14 +57,11 @@ int main(int argc, char *argv[]){
     int numpackets = filesize/payloadsize +1;
     
     for (int i = 0; i < numpackets; i++){
-
         if (sendto(sd, buffer+(i*payloadsize), payloadsize, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr)) == -1){
             printf("send failure\n");
         }
         printf("sending packet #%d\n", i);
-    
     }
     free(buffer);
-	
     return 1;
 }

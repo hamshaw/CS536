@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <signal.h>
+#include "writeToFile.h"
 int main(int argc, char *argv[]){
     
     if (argc != 2){
@@ -40,11 +41,12 @@ int main(int argc, char *argv[]){
     char filename[6] = {0};
     unsigned int filesize;
     unsigned int payloadsize;
-    printf("metadata: %.*s\n",14, metadata);
+    printf("metadata: %s\n", metadata);
 
     memcpy(filename, metadata, 6);
     memcpy(&filesize, metadata+6, 4);
     memcpy(&payloadsize, metadata+10, 4);
+    filename[6] = '\0';
     printf("check vals: %s, %u, %u\n", filename, filesize, payloadsize);
     char buffer[filesize];
     for (int i = 0; i<(1 + filesize/payloadsize); i++){
@@ -53,6 +55,10 @@ int main(int argc, char *argv[]){
         exit(-1);
         }
         printf("%s\n", buffer);
+    }
+    if (writeToFile(filename, buffer, filesize) == -1){
+        printf("error writing to file\n");
+        return -1;
     }
     return 1;
 }
