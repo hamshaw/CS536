@@ -14,6 +14,12 @@ int main(int argc, char *argv[]){
         exit(1);
     }
     
+    struct sigaction alarmAction;
+    alarmAction.sa_handler = alarmHandler;
+    alarmAction.sa_flags = 0;
+    sigemptyset(&alarmAction.sa_mask);
+    sigaction(SIGALRM, &alarmAction, NULL);
+
     int sd;
     const char * rcvip = argv[1];
     int pn = atoi(argv[2]);
@@ -50,28 +56,36 @@ int main(int argc, char *argv[]){
     memcpy(metadata+6, &filesize, 4);
     memcpy(metadata+10, &payloadsize, 4);
     *(metadata+1) = 't';//FOR TESTING ONLY< REMOVE BEFORE SUBMISSION
-    
-    ualarm(250);
-    if (sendto(sd, metadata, 14, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr))==-1){
-        printf("error sending meta data\n");
+    for (int i = 0; i<5; i++){
+        ualarm(250);
+        if (sendto(sd, metadata, 14, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr))==-1){
+            printf("error sending meta data\n");
+        }
+        int ackNum;
+        if ((recvfrom(sd, &ackNum, sizeof(int), 0, (struct sockaddr*)NULL, NULL) == -1) || ackNum != 0){
+            printf("error recieving ack\n");
+            free(buffer);
+            return -1;
+        }else{
+            ualarm(0);
+            break;
+        }
     }
-    int ackNum;
-    if (recvfrom(sd, &ackNum, 1, 0, (struct sockaddr*)NULL, NULL) == -1){
-        printf("error recieving ack\n");
-        free(buffer);
-        return -1;
-    }
-    ualarm(0);
     //check for ack
     int numpackets = filesize/payloadsize +1;
-    int acked[numpackets+1];
+    int acked[numpackets+2];
+    acked[0] = 1;
     memset(acked, 0, numpackets);
     for (int i = 0; i < numpackets; i++){
         if (sendto(sd, buffer+(i*payloadsize), payloadsize, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr)) == -1){
             printf("send failure\n");
         }
         printf("sending packet #%d\n", i);
-        recvfrom(
+        if (recvfrom(sd, ackNum, sizeof(int), 0, ((struct sockaddr*)NULL, NULL) == -1)){
+            printf("receiving ack failed");
+            return -1;
+        }
+        acked[ackNum] = 1;
     }
     free(buffer);
     return 1;

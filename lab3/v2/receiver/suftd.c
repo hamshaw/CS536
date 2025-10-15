@@ -38,17 +38,17 @@ int main(int argc, char *argv[]){
     if (recvfrom(sd, metadata, 14, 0, (struct sockaddr*)NULL, NULL)==-1){
         printf("error getting meta data\n");
     }
+
     char filename[6] = {0};
     unsigned int filesize;
     unsigned int payloadsize;
-    printf("metadata: %s\n", metadata);
 
     memcpy(filename, metadata, 6);
     memcpy(&filesize, metadata+6, 4);
     memcpy(&payloadsize, metadata+10, 4);
     filename[6] = '\0';
-    printf("check vals: %s, %u, %u\n", filename, filesize, payloadsize);
     char buffer[filesize];
+    
     for (int i = 0; i<(1 + filesize/payloadsize); i++){
         if (recvfrom(sd, buffer+(i*payloadsize), payloadsize, 0, (struct sockaddr*)NULL, NULL) == -1){
 	    printf("error recieving\n");
