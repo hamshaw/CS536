@@ -15,7 +15,6 @@ int main(int argc, char *argv[]){
     
     int pn = atoi(argv[1]);
     int sd;
-    char buffer[100];
 
 	struct sockaddr_in serveraddr, clientaddr;
     memset(&serveraddr, 0, sizeof(serveraddr));
@@ -34,8 +33,22 @@ int main(int argc, char *argv[]){
         printf("error binding\n");
         exit(-1);
     }
-    while(1){
-        if (recvfrom(sd, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL) == -1){
+    char metadata[14];
+    if (recvfrom(sd, metadata, 14, 0, (struct sockaddr*)NULL, NULL)==-1){
+        printf("error getting meta data\n");
+    }
+    char filename[6] = {0};
+    unsigned int filesize;
+    unsigned int payloadsize;
+    printf("metadata: %.*s\n",14, metadata);
+
+    memcpy(filename, metadata, 6);
+    memcpy(&filesize, metadata+6, 4);
+    memcpy(&payloadsize, metadata+10, 4);
+    printf("check vals: %s, %u, %u\n", filename, filesize, payloadsize);
+    char buffer[filesize];
+    for (int i = 0; i<(1 + filesize/payloadsize); i++){
+        if (recvfrom(sd, buffer+(i*payloadsize), payloadsize, 0, (struct sockaddr*)NULL, NULL) == -1){
 	    printf("error recieving\n");
         exit(-1);
         }
