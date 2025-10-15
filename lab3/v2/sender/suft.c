@@ -50,17 +50,28 @@ int main(int argc, char *argv[]){
     memcpy(metadata+6, &filesize, 4);
     memcpy(metadata+10, &payloadsize, 4);
     *(metadata+1) = 't';//FOR TESTING ONLY< REMOVE BEFORE SUBMISSION
+    
+    ualarm(250);
     if (sendto(sd, metadata, 14, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr))==-1){
         printf("error sending meta data\n");
     }
+    int ackNum;
+    if (recvfrom(sd, &ackNum, 1, 0, (struct sockaddr*)NULL, NULL) == -1){
+        printf("error recieving ack\n");
+        free(buffer);
+        return -1;
+    }
+    ualarm(0);
     //check for ack
     int numpackets = filesize/payloadsize +1;
-    
+    int acked[numpackets+1];
+    memset(acked, 0, numpackets);
     for (int i = 0; i < numpackets; i++){
         if (sendto(sd, buffer+(i*payloadsize), payloadsize, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr)) == -1){
             printf("send failure\n");
         }
         printf("sending packet #%d\n", i);
+        recvfrom(
     }
     free(buffer);
     return 1;
