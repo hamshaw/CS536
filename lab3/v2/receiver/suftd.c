@@ -19,7 +19,8 @@ int main(int argc, char *argv[]){
 
 	struct sockaddr_in serveraddr, clientaddr;
     memset(&serveraddr, 0, sizeof(serveraddr));
-
+    socklen_t len = sizeof(serveraddr);
+    
 
 	//socket()
 	if ((sd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
@@ -34,11 +35,16 @@ int main(int argc, char *argv[]){
         printf("error binding\n");
         exit(-1);
     }
+    socklen_t clen = sizeof(clientaddr);
     char metadata[14];
-    if (recvfrom(sd, metadata, 14, 0, (struct sockaddr*)NULL, NULL)==-1){
+    if ((recvfrom(sd, metadata, 14, 0, (struct sockaddr*)&clientaddr, &clen))==-1){
         printf("error getting meta data\n");
     }
-
+    int zero = 0;
+    if ((sendto(sd, &zero, sizeof(int), 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr)))==-1){
+            printf("error sending meta data ack\n");
+            exit(1);
+    }
     char filename[6] = {0};
     unsigned int filesize;
     unsigned int payloadsize;
@@ -55,6 +61,10 @@ int main(int argc, char *argv[]){
         exit(-1);
         }
         printf("%s\n", buffer);
+        if (sendto(sd, &i, sizeof(int), 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr)) == -1){
+            printf("error sending ack\n");
+            return -1;
+        }
     }
     if (writeToFile(filename, buffer, filesize) == -1){
         printf("error writing to file\n");

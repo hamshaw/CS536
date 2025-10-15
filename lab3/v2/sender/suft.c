@@ -7,6 +7,9 @@
 #include <netinet/in.h>
 #include <signal.h>
 #include "paramsProcessor.h"
+#include "alarmHandler.h"
+#include <unistd.h>
+
 int main(int argc, char *argv[]){
     
     if (argc != 4){
@@ -56,21 +59,25 @@ int main(int argc, char *argv[]){
     memcpy(metadata+6, &filesize, 4);
     memcpy(metadata+10, &payloadsize, 4);
     *(metadata+1) = 't';//FOR TESTING ONLY< REMOVE BEFORE SUBMISSION
+    int ackNum = -1;
     for (int i = 0; i<5; i++){
-        ualarm(250);
+        ualarm(250, 0);
         if (sendto(sd, metadata, 14, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr))==-1){
             printf("error sending meta data\n");
         }
-        int ackNum;
+
         if ((recvfrom(sd, &ackNum, sizeof(int), 0, (struct sockaddr*)NULL, NULL) == -1) || ackNum != 0){
             printf("error recieving ack\n");
             free(buffer);
             return -1;
         }else{
-            ualarm(0);
+            printf("got ack");
+            ualarm(0, 0);
             break;
         }
     }
+    if (ackNum == -1)
+        return -1;
     //check for ack
     int numpackets = filesize/payloadsize +1;
     int acked[numpackets+2];
@@ -81,10 +88,12 @@ int main(int argc, char *argv[]){
             printf("send failure\n");
         }
         printf("sending packet #%d\n", i);
-        if (recvfrom(sd, ackNum, sizeof(int), 0, ((struct sockaddr*)NULL, NULL) == -1)){
+        int ackNum;
+        if (recvfrom(sd, &ackNum, sizeof(int), 0, (struct sockaddr*)NULL, NULL) == -1){
             printf("receiving ack failed");
             return -1;
         }
+        printf("got ack #%d\n", ackNum);
         acked[ackNum] = 1;
     }
     free(buffer);
