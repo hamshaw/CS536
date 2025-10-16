@@ -60,8 +60,9 @@ int main(int argc, char *argv[]){
     char *buffer = malloc(filesize);
     char *packet = malloc(payloadsize+4); 
     int *datastructure = calloc((2 + filesize/payloadsize), sizeof(int));
+    socklen_t slen = sizeof(clientaddr);
     for (int i = 0; i<(1 + filesize/payloadsize); i++){
-        if (recvfrom(sd, packet, payloadsize+4, 0, (struct sockaddr*)NULL, NULL) == -1){
+        if (recvfrom(sd, packet, payloadsize+4, 0, (struct sockaddr*)&clientaddr, &slen) == -1){
 	        printf("error recieving\n");
             exit(-1);
         }
@@ -77,11 +78,16 @@ int main(int argc, char *argv[]){
                 break;
             }
         }
-        if (sendto(sd, &nextsegmentexpected, sizeof(int), 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr)) == -1){
-            printf("error sending ack\n");
-            exit(1);
+        int reps = 1;
+        if (nextsegmentexpected > filesize/payloadsize)
+            reps = 10;//this is so it acks 10 times on the last one
+        for (int h = 0; h<reps; h++){
+            if (sendto(sd, &nextsegmentexpected, sizeof(int), 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr)) == -1){
+                printf("error sending ack\n");
+                exit(1);
+            }
+            printf("Sent next expected #%d\n", nextsegmentexpected);
         }
-        printf("Sent ack #%d\n", i);
     }
     if (writeToFile(filename, buffer, filesize) == -1){
         printf("error writing to file\n");

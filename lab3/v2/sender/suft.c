@@ -103,7 +103,7 @@ int main(int argc, char *argv[]){
             printf("receiving ack failed");
             return -1;
         }
-        printf("got ack #%d\n", ackNum);
+        printf("Reciever is expecting packet #%d\n", ackNum);
         for (int spot = 0; spot <ackNum; spot++)
             acked[spot] = 1;
         usleep(micropace);
