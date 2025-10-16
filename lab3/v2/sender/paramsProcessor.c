@@ -27,5 +27,9 @@ int paramsProcessor(int i){
     }
 
     fclose(file);
+    if (params[i] < 0){
+        printf("parameter value is negative, flipping sign\n");
+        params[i] *=-1;
+    }
     return params[i];
 }

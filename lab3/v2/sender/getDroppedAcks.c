@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "getDroppedPackets.h"
+#include "getDroppedAcks.h"
 
-int getDroppedPackets(int index) {
-    char *filename = "receiver/receiver.lossmodel";
+int getDroppedAcks(int index) {
+    char *filename = "sender/sender.lossmodel";
     FILE *file = fopen(filename, "r");
     if (!file) {
         perror("Could not open file");
@@ -31,8 +31,8 @@ int getDroppedPackets(int index) {
         if (count == index) {
             int value = atoi(token);
             free(buffer);
-            if (value<0)
-                printf("negative value in lossmodel, ignoring\n");
+            if (value <0)
+                printf("negative value in lossmodel, ignoring");
             return value;
         }
         token = strtok(NULL, ",");

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -9,6 +10,7 @@
 #include "paramsProcessor.h"
 #include "alarmHandler.h"
 #include <unistd.h>
+#include "getDroppedAcks.h"
 
 int main(int argc, char *argv[]){
     
@@ -66,7 +68,7 @@ int main(int argc, char *argv[]){
     //*(metadata+1) = 't';//FOR TESTING ONLY< REMOVE BEFORE SUBMISSION
     char hopefullyfilename[6];
     for (int i = 0; i<5; i++){
-        ualarm(2500, 0);
+        ualarm(300, 0);
         if (sendto(sd, metadata, 14, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr))==-1){
             printf("error sending metadata\n");
         }
@@ -80,11 +82,15 @@ int main(int argc, char *argv[]){
             i = 5;//break;
         }
     }
-
+    int toskip[10];
+    for (int p = 0; p<10; p++)
+        toskip[p] = getDroppedAcks(p);
+    
+    int retransmits = 0;
     int numpackets = filesize/payloadsize +1;
     int *acked = calloc(numpackets+2, sizeof(int));
-    //memset(acked, 0, numpackets+2);
-    printf("acked[numpackts]: %d\n", acked[numpackets]);
+    struct timeval start;
+    gettimeofday(&start, NULL);
     while(acked[numpackets-1]==0){
     
     for (int i = 0; i < numpackets; i++){
@@ -98,17 +104,39 @@ int main(int argc, char *argv[]){
             printf("send failure\n");
         }
         printf("sending packet #%d\n", i);
+        retransmits++;
         int ackNum;
         if (recvfrom(sd, &ackNum, sizeof(int), 0, (struct sockaddr*)NULL, NULL) == -1){
             printf("receiving ack failed");
             return -1;
         }
-        printf("Reciever is expecting packet #%d\n", ackNum);
-        for (int spot = 0; spot <ackNum; spot++)
-            acked[spot] = 1;
+        int skip = 0;
+        for (int w = 0; w<10; w++){
+            if (toskip[w] == ackNum){
+                skip = 1;
+                toskip[w] = -1;
+                break;
+            }
+        }
+        if (skip == 0){
+            printf("Reciever is expecting packet #%d\n", ackNum);
+            for (int spot = 0; spot <ackNum; spot++)
+                acked[spot] = 1;
+            retransmits = 0;
+        }else
+            printf("lost ack #%d\n", ackNum);
+        if (retransmits >=5){
+            printf("retransmitted too many times, giving up\n");
+            exit(1);
+        }
         usleep(micropace);
     }
     }
+    struct timeval end;
+    gettimeofday(&end, NULL);
+    long elapsed = (end.tv_sec - start.tv_sec) * 1000L +
+           (end.tv_usec - start.tv_usec) / 1000L;
+    printf("Elapsed time in milliseconds: %ld\n", elapsed);
     free(buffer);
     return 1;
 }
