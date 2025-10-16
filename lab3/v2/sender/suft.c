@@ -26,7 +26,8 @@ int main(int argc, char *argv[]){
     int sd;
     const char * rcvip = argv[1];
     int pn = atoi(argv[2]);
-    const char filename[] = "tm.txt";//argv[3];
+    char filename[6];
+    memcpy(filename, argv[3], 6);
 
 	struct sockaddr_in serveraddr, clientaddr;
     memset(&serveraddr, 0, sizeof(serveraddr));
@@ -55,36 +56,45 @@ int main(int argc, char *argv[]){
     buffer[bytesRead] = '\0';
     fclose(file);
     char metadata[14];
+    if (filesize>maxfilesize){
+        printf("file is too large to transmit...quitting");
+        exit(1);
+    }
     memcpy(metadata, filename, 6);
     memcpy(metadata+6, &filesize, 4);
     memcpy(metadata+10, &payloadsize, 4);
-    *(metadata+1) = 't';//FOR TESTING ONLY< REMOVE BEFORE SUBMISSION
-    int ackNum = -1;
+    //*(metadata+1) = 't';//FOR TESTING ONLY< REMOVE BEFORE SUBMISSION
+    char hopefullyfilename[6];
     for (int i = 0; i<5; i++){
         ualarm(250, 0);
         if (sendto(sd, metadata, 14, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr))==-1){
-            printf("error sending meta data\n");
+            printf("error sending metadata\n");
         }
-
-        if ((recvfrom(sd, &ackNum, sizeof(int), 0, (struct sockaddr*)NULL, NULL) == -1) || ackNum != 0){
-            printf("error recieving ack\n");
+        socklen_t slen = sizeof(serveraddr);
+        if (recvfrom(sd, hopefullyfilename, 6*sizeof(char), 0, (struct sockaddr*)&serveraddr, &slen) == -1){// || strncmp(filename, hopefullyfilename, 5) != 0){
+            printf("error recieving metadata ack\n");
             free(buffer);
-            return -1;
+            exit(1);
         }else{
-            printf("got ack");
             ualarm(0, 0);
-            break;
+            i = 5;//break;
         }
     }
-    if (ackNum == -1)
-        return -1;
-    //check for ack
+
     int numpackets = filesize/payloadsize +1;
-    int acked[numpackets+2];
-    acked[0] = 1;
-    memset(acked, 0, numpackets);
+    int *acked = calloc(numpackets+2, sizeof(int));
+    //memset(acked, 0, numpackets+2);
+    printf("acked[numpackts]: %d\n", acked[numpackets]);
+    while(acked[numpackets-1]==0){
+    
     for (int i = 0; i < numpackets; i++){
-        if (sendto(sd, buffer+(i*payloadsize), payloadsize, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr)) == -1){
+        if (acked[i] == 1)
+            continue;
+        char packet[payloadsize+4];
+        memcpy(packet, &i, 4);
+        memcpy(packet+4, buffer+(i*payloadsize), payloadsize);
+        //printf("packet: %.*s\n", 10, packet+4);
+        if (sendto(sd, packet, 4+payloadsize, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr)) == -1){
             printf("send failure\n");
         }
         printf("sending packet #%d\n", i);
@@ -94,7 +104,10 @@ int main(int argc, char *argv[]){
             return -1;
         }
         printf("got ack #%d\n", ackNum);
-        acked[ackNum] = 1;
+        for (int spot = 0; spot <ackNum; spot++)
+            acked[spot] = 1;
+        usleep(micropace);
+    }
     }
     free(buffer);
     return 1;
