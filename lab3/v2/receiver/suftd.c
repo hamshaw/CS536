@@ -6,7 +6,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <signal.h>
+#include <math.h>
 #include "writeToFile.h"
+#include "getDroppedPackets.h"
 int main(int argc, char *argv[]){
     
     if (argc != 2){
@@ -35,6 +37,10 @@ int main(int argc, char *argv[]){
         printf("error binding\n");
         exit(-1);
     }
+    //get packets to skip:
+    int toskip[10];
+    for (int j=0; j<10; j++)
+        toskip[j] = getDroppedPackets(j);
     socklen_t clen = sizeof(clientaddr);
     char metadata[14];
     if ((recvfrom(sd, metadata, 14, 0, (struct sockaddr*)&clientaddr, &clen))==-1){
@@ -42,8 +48,8 @@ int main(int argc, char *argv[]){
     }
 
     char filename[6] = {0};
-    unsigned int filesize;
-    unsigned int payloadsize;
+    int filesize;
+    int payloadsize;
     memcpy(filename, metadata, 6);
     memcpy(&filesize, metadata+6, 4);
     memcpy(&payloadsize, metadata+10, 4);
@@ -58,41 +64,63 @@ int main(int argc, char *argv[]){
     char underscoren[] = "_n\0";
     memcpy(filename+6, underscoren, 3);
     char *buffer = malloc(filesize);
-    char *packet = malloc(payloadsize+4); 
-    int *datastructure = calloc((2 + filesize/payloadsize), sizeof(int));
+    char *packet = malloc(payloadsize+4);
+    
+
+    int numpackets = ceil(((double)filesize)/((double)payloadsize));
+    int *datastructure = calloc((numpackets+1), sizeof(int));
     socklen_t slen = sizeof(clientaddr);
-    for (int i = 0; i<(1 + filesize/payloadsize); i++){
-        if (recvfrom(sd, packet, payloadsize+4, 0, (struct sockaddr*)&clientaddr, &slen) == -1){
-	        printf("error recieving\n");
-            exit(-1);
-        }
-        int seq;
-        memcpy(&seq, packet, 4);
-        memcpy(buffer+(seq*payloadsize), packet+4, payloadsize);
-        //create nextsegmentexpected
-        datastructure[seq] = 1;
-        int nextsegmentexpected = 0;
-        for (int spot = 0; spot < filesize/payloadsize+2; spot++){
-            if (datastructure[spot] == 0){
-                nextsegmentexpected = spot;
-                break;
+    int nextsegmentexpected = 0;
+    int done = 0;
+    while (nextsegmentexpected < numpackets){
+        //for (int i = 0; i<numpackets; i++){
+            if (recvfrom(sd, packet, payloadsize+4, 0, (struct sockaddr*)&clientaddr, &slen) == -1){
+	            printf("error recieving\n");
+                exit(-1);
             }
-        }
-        int reps = 1;
-        if (nextsegmentexpected > filesize/payloadsize)
-            reps = 10;//this is so it acks 10 times on the last one
-        for (int h = 0; h<reps; h++){
-            if (sendto(sd, &nextsegmentexpected, sizeof(int), 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr)) == -1){
-                printf("error sending ack\n");
-                exit(1);
+            int seq;
+            memcpy(&seq, packet, 4);
+            int skip = 0;
+            for (int k = 0; k <10; k++){
+                if (seq == toskip[k]){
+                    toskip[k] = -1;
+                    skip = 1;
+                }
             }
-            printf("Sent next expected #%d\n", nextsegmentexpected);
-        }
+            if (skip){
+                printf("dropping packet #%d\n", seq);
+                //continue;
+            }else{
+                printf("recieved packet #%d\n", seq);
+                memcpy(buffer+(seq*payloadsize), packet+4, payloadsize);
+                datastructure[seq] = 1;
+            }
+            //int nextsegmentexpected = 0;
+            for (int spot = 0; spot < numpackets+1; spot++){
+                if (datastructure[spot] == 0){
+                    nextsegmentexpected = spot;
+                    printf("nse = %d, numpackets = %d\n", spot, numpackets);
+                    if (spot >= numpackets){
+                        done = 1;
+                    }
+                    break;
+                }
+            }
+            int reps = 1;
+            if (nextsegmentexpected >= numpackets)
+                reps = 10;//this is so it acks 10 times on the last one
+            for (int h = 0; h<reps; h++){
+                if (sendto(sd, &nextsegmentexpected, sizeof(int), 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr)) == -1){
+                    printf("error sending ack\n");
+                    exit(1);
+                }
+                printf("Sent next expected #%d\n", nextsegmentexpected);
+            }
     }
     if (writeToFile(filename, buffer, filesize) == -1){
         printf("error writing to file\n");
         exit(1);
     }
-    free(datastructure);
+    //free(datastructure);
     exit(0);
 }
