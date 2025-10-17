@@ -9,6 +9,8 @@
 #include <math.h>
 #include "writeToFile.h"
 #include "getDroppedPackets.h"
+#include <unistd.h>
+
 int main(int argc, char *argv[]){
     
     if (argc != 2){
@@ -55,11 +57,12 @@ int main(int argc, char *argv[]){
     memcpy(&payloadsize, metadata+10, 4);
     filename[6] = '\0';
     printf("Got metadata: %s, %u, %u\n", filename, filesize, payloadsize);
-
+	
     if ((sendto(sd, filename, 6*sizeof(char), 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr)))==-1){
             printf("error sending metadata ack\n");
             exit(1);
     }
+    //ualarm(250, 0);
     printf("acknowledged metadata\n");
     char underscoren[] = "_n\0";
     memcpy(filename+6, underscoren, 3);
@@ -78,6 +81,7 @@ int main(int argc, char *argv[]){
 	            printf("error recieving\n");
                 exit(-1);
             }
+	    //ualarm(0, 0);
             int seq;
             memcpy(&seq, packet, 4);
             int skip = 0;
@@ -99,7 +103,7 @@ int main(int argc, char *argv[]){
             for (int spot = 0; spot < numpackets+1; spot++){
                 if (datastructure[spot] == 0){
                     nextsegmentexpected = spot;
-                    printf("nse = %d, numpackets = %d\n", spot, numpackets);
+                    //printf("nse = %d, numpackets = %d\n", spot, numpackets);
                     if (spot >= numpackets){
                         done = 1;
                     }

@@ -3,7 +3,7 @@
 #include <string.h>
 #include "paramsProcessor.h"
 int paramsProcessor(int i){
-    FILE *file = fopen("sender/sender.param", "r");
+    FILE *file = fopen("sender.param", "r");
     
     int params[3];
     char line[64];

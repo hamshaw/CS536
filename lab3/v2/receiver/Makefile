@@ -1,10 +1,8 @@
-all: sender receiver objects
-
-sender:
-	$(MAKE) -C sender sender
+all: receiver
 
 receiver:
-	$(MAKE) -C receiver receiver
+	gcc -o suftd suftd.c writeToFile.c getDroppedPackets.c -lm
+
 objects:
 	gcc -c sender/suft.c -o suft.o -lm
 	gcc -c receiver/suftd.c -o suftd.o -lm

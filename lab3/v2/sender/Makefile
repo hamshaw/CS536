@@ -1,10 +1,8 @@
-all: sender receiver objects
+all: sender
 
 sender:
-	$(MAKE) -C sender sender
+	gcc -o suft suft.c getDroppedAcks.c alarmHandler.c paramsProcessor.c -lm
 
-receiver:
-	$(MAKE) -C receiver receiver
 objects:
 	gcc -c sender/suft.c -o suft.o -lm
 	gcc -c receiver/suftd.c -o suftd.o -lm

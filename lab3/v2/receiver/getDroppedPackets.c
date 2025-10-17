@@ -4,7 +4,7 @@
 #include "getDroppedPackets.h"
 
 int getDroppedPackets(int index) {
-    char *filename = "receiver/receiver.lossmodel";
+    char *filename = "receiver.lossmodel";
     FILE *file = fopen(filename, "r");
     if (!file) {
         perror("Could not open file");

@@ -68,7 +68,7 @@ int main(int argc, char *argv[]){
     //*(metadata+1) = 't';//FOR TESTING ONLY< REMOVE BEFORE SUBMISSION
     char hopefullyfilename[6];
     for (int i = 0; i<5; i++){
-        ualarm(300, 0);
+        ualarm(3000, 0);
         if (sendto(sd, metadata, 14, 0, (const struct sockaddr*) &serveraddr, sizeof(serveraddr))==-1){
             printf("error sending metadata\n");
         }

@@ -4,7 +4,7 @@
 #include "getDroppedAcks.h"
 
 int getDroppedAcks(int index) {
-    char *filename = "sender/sender.lossmodel";
+    char *filename = "sender.lossmodel";
     FILE *file = fopen(filename, "r");
     if (!file) {
         perror("Could not open file");
