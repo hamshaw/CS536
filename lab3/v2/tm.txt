@@ -1,6 +1,0 @@
-hannah faith shaw
-computer science
-eliezer
-networksill show the configuration of veth0 at the opposite/remote end whose IPv4 address is 192.168.1.2 as noted above.
-
-For security reasons, we cannot perform sniffing on eth0 which is the interface of the lab machines, a shared resource. Therefore we use virtual/dummy interfaces in Linux that allows veth0 to be configured as a separate Ethernet interface -- albeit virtual, not physical -- with private IP address 192.168.1.1 that can reach 192.168.1.2, and vice versa. Thus performing veth at 192.168.1.2 on an amber machine does not
