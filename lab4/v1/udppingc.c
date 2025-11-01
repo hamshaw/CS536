@@ -38,17 +38,16 @@ int main(int argc, char const* argv[]){
 	
 	memset(&clientaddr, 0, sizeof(clientaddr));
     	memset(&serveraddr, 0, sizeof(serveraddr));
-    	//serveraddr.sin6_addr.s_addr = inet_pton(ip_addr, "fe80::a6bb:6dff:fe44:fc43%eth0");
-    	//serveraddr.sin6_port = htons(pn);
-    	//serveraddr.sin6_family = AF_INET6;
-        //serveraddr.sin6_port_id = 32;
-	clientaddr.sin6_port = htons(pn2);
+   	
+	//set up clientaddr first
+	clientaddr.sin6_scope_id = 32;
+	clientaddr.sin6_port = pn;
 	clientaddr.sin6_family = AF_INET6;
-	clientaddr.sin6_addr.s_addr = htonl(INADDR_ANY, "fe80::a6bb:6dff:fe44:fc43%eth0");
-    clientaddr.sin6_port_id = 32;
-    
+	inet_ptons(AF_INET6, "fe80::a6bb:6dff:fe44:fc43%eth0", clientaddr.sin6_addr);
+	
+
     	//scoket()
-    	sd = socket(AF_INET, SOCK_DGRAM, 0);
+    	sd = socket(AF_INET6, SOCK_DGRAM, 0);
    
 	//bind()
 	if (bind(sd, (struct sockaddr*)&clientaddr, sizeof(clientaddr)) != 0){
@@ -56,6 +55,11 @@ int main(int argc, char const* argv[]){
 		close(sd);
 		exit(1);
 	}
+
+	//set up serveraddr
+	serveraddr.sin6_family = AF_INET6;
+	serveraddr.sin6_port = pn2;
+	inet_ptons(AF_INET6, "fe80::a6bb:6dff:fe44:ddb8%eth0", serveraddr.sin6_addr);
 
 	srand(time(NULL));
 	int number = rand()%1000;

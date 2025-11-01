@@ -20,11 +20,11 @@ int main(int argc, char const* argv[]){
     	memset(&serveraddr, 0, sizeof(serveraddr));
 
     	//socket()
-    	ssd = socket(AF_INET, SOCK_DGRAM, 0);        
+    	ssd = socket(AF_INET6, SOCK_DGRAM, 0);        
     
-    	serveraddr.sin6_addr.s_addr = htonl(INADDR_ANY);
+    	inet_pton(AF_INET6, "fe80::a6bb:6dff:fe44:ddb8%eth0", serveraddr.sin6_addr);
     	serveraddr.sin6_port = htons(pn);
-    	serveraddr.sin6_family = AF_INET; 
+    	serveraddr.sin6_family = AF_INET6; 
         serveraddr.sin6_scope_id = 32;
 	//bind()
     	bind(ssd, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
