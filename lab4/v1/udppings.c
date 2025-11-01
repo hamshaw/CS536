@@ -23,18 +23,19 @@ int main(int argc, char const* argv[]){
     	//socket()
     	ssd = socket(AF_INET6, SOCK_DGRAM, 0);        
     
-    	//inet_pton(AF_INET6, "fe80::a6bb:6dff:fe44:ddb8", &(serveraddr.sin6_addr));
     	serveraddr.sin6_addr = in6addr_any;
 	serveraddr.sin6_port = htons(pn);
     	serveraddr.sin6_family = AF_INET6; 
         serveraddr.sin6_scope_id = if_nametoindex("eth0");
+	
 	//bind()
     	if(0 != bind(ssd, (struct sockaddr*)&serveraddr, sizeof(serveraddr))){
 		printf("binding failed, closing\n");
 		//close(ssd);
 		exit(1);
 	}
-     	while(1){
+     	
+	while(1){
     	
 		//recvfrom()
     		len = sizeof(clientaddr);

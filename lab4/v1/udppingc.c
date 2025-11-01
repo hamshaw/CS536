@@ -45,7 +45,6 @@ int main(int argc, char const* argv[]){
 	clientaddr.sin6_port = htons(pn2);
 	clientaddr.sin6_family = AF_INET6;
 	inet_pton(AF_INET6, "fe80::a6bb:6dff:fe44:fc43", &(clientaddr.sin6_addr));
-	//clientaddr.sin6_addr = in6addr_any;
 
     	//scoket()
     	sd = socket(AF_INET6, SOCK_DGRAM, 0);
