@@ -9,6 +9,7 @@
 #include <string.h>
 #include <signal.h>
 #include <time.h>
+#include <net/if.h>
 #include "math_functions.h"
 #include "alarmHandler.h"
 int main(int argc, char const* argv[]){
@@ -40,11 +41,11 @@ int main(int argc, char const* argv[]){
     	memset(&serveraddr, 0, sizeof(serveraddr));
    	
 	//set up clientaddr first
-	clientaddr.sin6_scope_id = 32;
-	clientaddr.sin6_port = pn;
+	clientaddr.sin6_scope_id = if_nametoindex("eth0");
+	clientaddr.sin6_port = htons(pn2);
 	clientaddr.sin6_family = AF_INET6;
-	inet_ptons(AF_INET6, "fe80::a6bb:6dff:fe44:fc43%eth0", clientaddr.sin6_addr);
-	
+	inet_pton(AF_INET6, "fe80::a6bb:6dff:fe44:ddb8%eth0", &(clientaddr.sin6_addr));
+	//clientaddr.sin6_addr = in6addr_any;
 
     	//scoket()
     	sd = socket(AF_INET6, SOCK_DGRAM, 0);
@@ -58,8 +59,9 @@ int main(int argc, char const* argv[]){
 
 	//set up serveraddr
 	serveraddr.sin6_family = AF_INET6;
-	serveraddr.sin6_port = pn2;
-	inet_ptons(AF_INET6, "fe80::a6bb:6dff:fe44:ddb8%eth0", serveraddr.sin6_addr);
+	serveraddr.sin6_port = htons(pn);
+	serveraddr.sin6_scope_id = if_nametoindex("eth0");
+	inet_pton(AF_INET6, "fe80::a6bb:6dff:fe44:ddb8", &(serveraddr.sin6_addr));
 
 	srand(time(NULL));
 	int number = rand()%1000;
@@ -67,6 +69,7 @@ int main(int argc, char const* argv[]){
         memcpy(message, secret, 6);
 	printf("Begining to send %d ping messages\n", pcount);
 	for (int i=0; i<pcount; i++){
+		printf("%d\n", number+i);
 		sprintf(message+6, "%d", number+i);
 		ualarm(123456, 0);
 		
@@ -76,10 +79,13 @@ int main(int argc, char const* argv[]){
 		}
 	
     		//recvfrom()
-    		recvfrom(sd, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL);
+    		int len = sizeof(serveraddr);
+		recvfrom(sd, buffer, sizeof(buffer), 0, (struct sockaddr*)&serveraddr, &len);
+		
 		if (atoi(buffer+6) == number+i){//not how you check the index
 			int val = ualarm(0, 0);
 			values[i] = val;
+			printf("%d\n", atoi(buffer+6));
 		}
 	}
 	printf("Completed sending of ping messages\n");

@@ -1,7 +1,7 @@
 all: server client objects
 
 server: udppings.c
-	gcc -o udpings udppings.c
+	gcc -o udppings udppings.c
 
 client: udppingc.c math_functions.c alarmHandler.c
 	gcc -o udppingc udppingc.c math_functions.c alarmHandler.c -lm
