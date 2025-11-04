@@ -65,7 +65,7 @@ int main(int argc, char const* argv[]){
         //read()
         ssize_t int_bytes;
         unsigned int hopefully_315;
-        int_bytes = read(sock, &hopefully_315, 2);
+        int_bytes = read(sock, &hopefully_315, sizeof(unsigned int));
 
         if (hopefully_315 != 315){//if they dont send 315
             printf("receieved wrong value, closing request\n");
@@ -108,6 +108,7 @@ int main(int argc, char const* argv[]){
             struct sockaddr_in childaddr;
             memset(&childaddr, 0, sizeof(childaddr));
             childaddr.sin_addr.s_addr = forwardtab[sessionindex].sourceaddr;//sin_addr.s_addr?
+            //inet_pton(AF_INET, forwardtab[sessionindesx].sourceaddr, &(childaddr.sin_addr));
             childaddr.sin_family = AF_INET;
             int port2 = 55500;
             while(1){
@@ -118,7 +119,7 @@ int main(int argc, char const* argv[]){
                     char secret_port[8];
                     memcpy(secret_port, secret, 6);
                     unsigned int nport = htons(port2);
-                    memcpy(secret_port + 6, &nport, 2);
+                    memcpy(secret_port + 6, &port2, 2);
                     write(new_sd, secret_port, 8);//sending client port number
                     break;
                 }
@@ -133,6 +134,7 @@ int main(int argc, char const* argv[]){
             struct sockaddr_in childaddr_out;
             memset(&childaddr_out, 0, sizeof(childaddr_out));
             childaddr_out.sin_addr.s_addr = forwardtab[sessionindex].destaddr;//sin_addr.s_addr?
+            //inet_pton(AF_INET, forwardtab[sessionindex].destaddr, &(childaddr_out.sin_addr));
             childaddr_out.sin_family = AF_INET;
             int port = 57500;
 
