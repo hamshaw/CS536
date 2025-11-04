@@ -127,7 +127,64 @@ int main(int argc, char const* argv[]){
                 childaddr_out.sin_family = AF_INET;
                 int port = 57500;
 
+                while(1){
+                    childaddr_out.sin_port = htons(port);
+                    if (bind(new_sd_out, (struct sockaddr*)&childaddr_out, sizeof(childaddr_out)) == 0){//success
+                        printf("Successfully bound to port #%d for sending\n", port);
+                        forwardtab[sessionindex].tunnelpt = port;
+                        break;
+                    }
+                    printf("out - failed to bind to %d\n", port);
+                    port++;
+                }
+                //sd
+                //new_sd
+                //new_sd_out
+                fd_set readfds;
+                int max_fd;
+                while(1){
+                    FD_ZERO(&readfds);
+                    FD_SET(sd, &readfds);
+                    FD_SET(new_sd, &readfds);
+                    FD_SET(new_sd_out, &readfds);
+                    max_fd = sd;
+                    if (new_sd > max_fd) max_fd = new_sd;
+                    if (new_sd_out > max_fd) max_fd = new_sd_out;
+                    max_fd += 1;
 
+                    int ready = select(max_fd, &readfds, NULL, NULL, NULL);
+                    if (ready < 0) {
+                        printf("select failed\n");
+                        break;
+                    }
+                    if (FD_ISSET(sd, &readfds)){
+                        //sd is ready
+                        char hopefully_secret[6];
+                        read(sd, hopefully_secret, 6);
+                        if (strncmp(secret, hopefully_secret, 6) != 0){
+                            printf("received bad secret, not terminating\n");
+                        }else{
+                            printf("recieved secret, terminating\n");
+                            forwardtab[sessionindex].sourceaddr = 0;//make shared mem
+                            break;
+                        }
+                    }
+                    if (FD_ISSET(new_sd, &readfds)){
+                        //new_sd is ready
+                        char buffer[100] = {0};
+                        int len = sizeof(childaddr);
+                        recvfrom(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*)&childaddr, &len);
+                        sendto(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*)&childaddr_out, sizeof(childadder_out));
+                    }
+                    if (FD_ISSET(new_sd_out, &readfds)){
+                        //new_sd_out is ready
+                        char buffer[100] = {0};
+                        int len = sizeof(childaddr);
+                        recvfrom(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*)&childaddr_out, &len);
+                        sendto(new_sd, buffer, sizeof(buffer), 10, 0, (struct sockaddr*)&childaddr, sizeof(childaddr));
+                    }
+                }
+                exit(0);
             }else{//parent code
                 int status;
                 waitpid(pid, &status, 0);
