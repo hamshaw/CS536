@@ -19,11 +19,12 @@ int main(int argc, char const* argv[]){
     const char * secret = argv[3]
     size_t secret_len = 6;
 
-    for
+    
     struct sockaddr_in address;
     socklen_t addrlen = sizeof(address);
 
     //socket()
+    int sd;
     if ((sd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("creating socket failed");
         exit(-1);
@@ -80,10 +81,57 @@ int main(int argc, char const* argv[]){
                 printf("requests exceed NUMSESSIONS, dropping connection\n");
                 continue;
             }
-            read(sock, forwardtab[sessionindex].destaddr, 4);
-            read(sock, forwardtab[sessionindex].despt, 2);
-            read(sock, forwardtab[sessionindex].sourceaddr, 4);
-            
+            //read(sock, destaddr, 4);
+            //read(sock, despt, 2);
+            //read(sock, sourceaddr, 4);
+
+            read(sock, &(forwardtab[sessionindex].destaddr), 4);
+            read(sock, &(forwardtab[sessionindex].destpt), 2);
+            read(sock, &(forwardtab[sessionindex].sourceaddr), 4);
+            int pid = fork();
+            if (pid == 0){//child code
+                //do stuff
+                int new_sd;
+                if ((new_sd = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
+                    printf("CREATING SOCKET FAILED\n");
+                    exit(-1);
+                }
+                struct sockaddr_in childaddr;
+                memset(&childaddr, 0, sizeof(childaddr));
+                childaddr.sin_addr.s_addr = forwardtab[sessionindex].sourceaddr;//sin_addr.s_addr?
+                childaddr.sin_family = AF_INET;
+                int port = 55500;
+                while(1){
+                    childaddr.sin_port = gtons(port);
+                    if (bind(new_sd, (struct sockaddr*)&childaddr, sizeof(childaddr)) == 0){//success
+                        printf("Successfully bound to port #%d, informing client\n", port);
+                        forwardtab[sessionindex].sourcept = port;
+                        char secret_port[8];
+                        memcpy(secret_port, secret, 6);
+                        unsigned int nport = htons(nport);
+                        memcpy(secret_port + 6, &nport, 2);
+                        write(new_sd, secret_port, 8);//sending client port number
+                        break;
+                    }
+                    printf("failed to bind to %d\n", port);
+                    port++;
+                }
+                int new_sd_out;
+                if ((new_sd_out = socket(AF_NET, SOCK_DGRAM, 0)) < 0){
+                    printf("CREATING SOCKET FAILED\n");
+                    exit(-1);
+                }
+                struct sockaddr_in childaddr_out;
+                memset(&childaddr_out, 0, sizeof(childaddr_out));
+                childaddr_out.sin_addr.s_addr = forwardtab[sessionindex].destaddr;//sin_addr.s_addr?
+                childaddr_out.sin_family = AF_INET;
+                int port = 57500;
+
+
+            }else{//parent code
+                int status;
+                waitpid(pid, &status, 0);
+            }
     }
 
 
