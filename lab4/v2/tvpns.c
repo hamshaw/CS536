@@ -7,7 +7,10 @@
 #include <netinet/in.h>
 #include <signal.h>
 #include <net/if.h>
-
+#include <sys/mman.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <sys/select.h>
 //server
 int main(int argc, char const* argv[]){
     if (argc != 4){
@@ -32,7 +35,7 @@ int main(int argc, char const* argv[]){
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(pn);
-    struct tunneltab forwardtab[NUMSESSIONS];
+    struct tunneltab *forwardtab = mmap(NULL, NUMSESSIONS*sizeof(struct tunneltab), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     memset(forwardtab, 0, sizeof(forwardtab));//might not work, check later
 
     //bind()
@@ -81,13 +84,11 @@ int main(int argc, char const* argv[]){
                 printf("requests exceed NUMSESSIONS, dropping connection\n");
                 continue;
             }
-            //read(sock, destaddr, 4);
-            //read(sock, despt, 2);
-            //read(sock, sourceaddr, 4);
 
             read(sock, &(forwardtab[sessionindex].destaddr), 4);
             read(sock, &(forwardtab[sessionindex].destpt), 2);
             read(sock, &(forwardtab[sessionindex].sourceaddr), 4);
+
             int pid = fork();
             if (pid == 0){//child code
                 //do stuff
@@ -102,7 +103,7 @@ int main(int argc, char const* argv[]){
                 childaddr.sin_family = AF_INET;
                 int port = 55500;
                 while(1){
-                    childaddr.sin_port = gtons(port);
+                    childaddr.sin_port = htons(port);
                     if (bind(new_sd, (struct sockaddr*)&childaddr, sizeof(childaddr)) == 0){//success
                         printf("Successfully bound to port #%d, informing client\n", port);
                         forwardtab[sessionindex].sourcept = port;
@@ -166,6 +167,10 @@ int main(int argc, char const* argv[]){
                         }else{
                             printf("recieved secret, terminating\n");
                             forwardtab[sessionindex].sourceaddr = 0;//make shared mem
+                            close(new_sd);
+                            close(new_sd_out);
+                            close(sd);
+                            munmap(forwardtab, NUMSESSIONS*sizeof(struct tunneltab));
                             break;
                         }
                     }
