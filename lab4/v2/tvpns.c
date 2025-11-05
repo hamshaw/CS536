@@ -11,14 +11,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/select.h>
+#include "tvpns.h"
 //server
-int NUMSESSIONS = 8;
-struct tunneltab {
-   unsigned long destaddr;
-   unsigned short destpt;
-   unsigned long sourceaddr;
-   unsigned short sourcept;
-   unsigned short tunnelpt; };
 int main(int argc, char const* argv[]){
     if (argc != 4){
             printf("please enter IPv4 address of server, the socket number, and secret\n");
