@@ -44,7 +44,8 @@ int main(int argc, char const* argv[]){
 	clientaddr.sin6_scope_id = if_nametoindex("eth0");
 	clientaddr.sin6_port = htons(pn2);
 	clientaddr.sin6_family = AF_INET6;
-	inet_pton(AF_INET6, "fe80::a6bb:6dff:fe44:fc43", &(clientaddr.sin6_addr));
+    clientaddr.sin6_addr = in6addr_any;
+	//inet_pton(AF_INET6, "fe80::a6bb:6dff:fe44:fc43", &(clientaddr.sin6_addr));
 
     	//scoket()
     	sd = socket(AF_INET6, SOCK_DGRAM, 0);
@@ -60,7 +61,8 @@ int main(int argc, char const* argv[]){
 	serveraddr.sin6_family = AF_INET6;
 	serveraddr.sin6_port = htons(pn);
 	serveraddr.sin6_scope_id = if_nametoindex("eth0");
-	inet_pton(AF_INET6, "fe80::a6bb:6dff:fe44:ddb8", &(serveraddr.sin6_addr));
+	//inet_pton(AF_INET6, "fe80::a6bb:6dff:fe44:ddb8", &(serveraddr.sin6_addr));
+    inet_pton(AF_INET6, ip_addr, &(serveraddr.sin6_addr));
 
 	srand(time(NULL));
 	int number = rand()%1000;
