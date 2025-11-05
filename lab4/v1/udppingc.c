@@ -70,7 +70,7 @@ int main(int argc, char const* argv[]){
         memcpy(message, secret, 6);
 	printf("Begining to send %d ping messages\n", pcount);
 	for (int i=0; i<pcount; i++){
-		printf("%d\n", number+i);
+		//printf("%d\n", number+i);
 		sprintf(message+6, "%d", number+i);
 		ualarm(123456, 0);
 		
@@ -86,7 +86,7 @@ int main(int argc, char const* argv[]){
 		if (atoi(buffer+6) == number+i){//not how you check the index
 			int val = ualarm(0, 0);
 			values[i] = val;
-			printf("%d\n", atoi(buffer+6));
+			//printf("%d\n", atoi(buffer+6));
 		}
 	}
 	printf("Completed sending of ping messages\n");
