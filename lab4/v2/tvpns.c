@@ -25,7 +25,7 @@ int main(int argc, char const* argv[]){
             exit(1);
     }
 
-    int pn = atoi(argv[2]);
+    unsigned short pn = atoi(argv[2]);
     const char * secret = argv[3];
     size_t secret_len = 6;
 
@@ -68,15 +68,16 @@ int main(int argc, char const* argv[]){
         int_bytes = read(sock, &hopefully_315, sizeof(unsigned int));
 
         if (hopefully_315 != 315){//if they dont send 315
-            printf("receieved wrong value, closing request\n");
+            printf("receieved wrong value %d, closing request\n", hopefully_315);
             close(sock);
             continue;
         }
         ssize_t secret_bytes;
-        char hopefully_secret[6];
+        char hopefully_secret[7];
         secret_bytes = read(sock, hopefully_secret, 6);
+	hopefully_secret[6] = '\0';
         if (memcmp(secret, hopefully_secret, 6) != 0){//if wrong secret
-            printf("received wrong secret, closing request\n");
+            printf("received wrong secret %s, closing request\n", hopefully_secret);
             close(sock);
             continue;
         }
@@ -93,13 +94,15 @@ int main(int argc, char const* argv[]){
             continue;
         }
 
-        read(sock, &(forwardtab[sessionindex].destaddr), 4);
-        read(sock, &(forwardtab[sessionindex].destpt), 2);
-        read(sock, &(forwardtab[sessionindex].sourceaddr), 4);
-
+        read(sock, &(forwardtab[sessionindex].destaddr), sizeof(unsigned long));
+        printf("here1 %lu\n", forwardtab[sessionindex].destaddr);
+	read(sock, &(forwardtab[sessionindex].destpt), sizeof(unsigned short));
+        printf("here2\n");
+	read(sock, &(forwardtab[sessionindex].sourceaddr), sizeof(unsigned long));
+	printf("this is the port recieved: %d\n", forwardtab[sessionindex].destpt);
         int pid = fork();
         if (pid == 0){//child code
-            //do stuff
+            //do stuffi
             int new_sd;
             if ((new_sd = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
                 printf("CREATING SOCKET FAILED\n");
@@ -108,24 +111,29 @@ int main(int argc, char const* argv[]){
             struct sockaddr_in childaddr;
             memset(&childaddr, 0, sizeof(childaddr));
             childaddr.sin_addr.s_addr = forwardtab[sessionindex].sourceaddr;//sin_addr.s_addr?
-            //inet_pton(AF_INET, forwardtab[sessionindesx].sourceaddr, &(childaddr.sin_addr));
-            childaddr.sin_family = AF_INET;
-            int port2 = 55500;
-            while(1){
+            char ip_str[INET_ADDRSTRLEN];
+	    inet_ntop(AF_INET, &childaddr.sin_addr, ip_str, sizeof(ip_str));
+	    printf("here is the ip address its using %s and %u\n", ip_str, childaddr.sin_addr.s_addr);
+	    //inet_pton(AF_INET, forwardtab[sessionindesx].sourceaddr, &(childaddr.sin_addr));
+            childaddr.sin_addr.s_addr = htonl(INADDR_ANY);//inet_addr(ip_str);
+	    childaddr.sin_family = AF_INET;
+            unsigned short port2 = 55500;
+            for (int j = 0; j< 100; j++){//CHANGE TO WHILE(1)
                 childaddr.sin_port = htons(port2);
                 if (bind(new_sd, (struct sockaddr*)&childaddr, sizeof(childaddr)) == 0){//success
                     printf("Successfully bound to port #%d, informing client\n", port2);
                     forwardtab[sessionindex].sourcept = port2;
-                    char secret_port[8];
+                    char secret_port[6+sizeof(unsigned short)];
                     memcpy(secret_port, secret, 6);
-                    unsigned int nport = htons(port2);
-                    memcpy(secret_port + 6, &port2, 2);
-                    write(new_sd, secret_port, 8);//sending client port number
+                    unsigned short nport = htons(port2);
+                    memcpy(secret_port + 6, &nport, sizeof(unsigned short));
+                    write(sock, secret_port, 6+sizeof(unsigned short));//sending client port number
                     break;
                 }
                 printf("failed to bind to %d\n", port2);
                 port2++;
             }
+	    //exit(1);//takeout
             int new_sd_out;
             if ((new_sd_out = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
                 printf("CREATING SOCKET FAILED\n");
@@ -133,12 +141,12 @@ int main(int argc, char const* argv[]){
             }
             struct sockaddr_in childaddr_out;
             memset(&childaddr_out, 0, sizeof(childaddr_out));
-            childaddr_out.sin_addr.s_addr = forwardtab[sessionindex].destaddr;//sin_addr.s_addr?
+            childaddr_out.sin_addr.s_addr = htonl(INADDR_ANY);//forwardtab[sessionindex].destaddr;//sin_addr.s_addr?
             //inet_pton(AF_INET, forwardtab[sessionindex].destaddr, &(childaddr_out.sin_addr));
             childaddr_out.sin_family = AF_INET;
             int port = 57500;
-
-            while(1){
+		//exit(1);
+            for (int p = 0; p<200; p++){
                 childaddr_out.sin_port = htons(port);
                 if (bind(new_sd_out, (struct sockaddr*)&childaddr_out, sizeof(childaddr_out)) == 0){//success
                     printf("Successfully bound to port #%d for sending\n", port);
@@ -148,6 +156,11 @@ int main(int argc, char const* argv[]){
                 printf("out - failed to bind to %d\n", port);
                 port++;
             }
+	    struct sockaddr_in childaddr_out_dest;
+            memset(&childaddr_out_dest, 0, sizeof(childaddr_out_dest));
+    	    childaddr_out_dest.sin_port = htons(50505);//forwardtab[sessionindex].destpt;
+            childaddr_out_dest.sin_family = AF_INET;
+            childaddr_out_dest.sin_addr.s_addr = inet_addr("10.168.53.15");//forwardtab[sessionindex].destaddr;
             //sd
             //new_sd
             //new_sd_out
@@ -168,11 +181,12 @@ int main(int argc, char const* argv[]){
                     printf("select failed\n");
                     break;
                 }
+		printf("select success\n");
                 if (FD_ISSET(sd, &readfds)){
                     //sd is ready
-                    char hopefully_secret[6];
-                    read(sd, hopefully_secret, 6);
-                    if (strncmp(secret, hopefully_secret, 6) != 0){
+                    char hopefully_secret2[6];
+                    read(sd, hopefully_secret2, 6);
+                    if (strncmp(secret, hopefully_secret2, 6) != 0){
                         printf("received bad secret, not terminating\n");
                     }else{
                         printf("recieved secret, terminating\n");
@@ -186,16 +200,18 @@ int main(int argc, char const* argv[]){
                 }
                 if (FD_ISSET(new_sd, &readfds)){
                     //new_sd is ready
+		    printf("got a message from client\n");
                     char buffer[100] = {0};
                     int len = sizeof(childaddr);
-                    recvfrom(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*)&childaddr, &len);
-                    sendto(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*)&childaddr_out, sizeof(childaddr_out));
+                    recvfrom(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL);
+                    sendto(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*) &childaddr_out_dest, sizeof(childaddr_out_dest));
                 }
                 if (FD_ISSET(new_sd_out, &readfds)){
                     //new_sd_out is ready
+		    printf("got a message from server\n");
                     char buffer[100] = {0};
                     int len = sizeof(childaddr);
-                    recvfrom(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*)&childaddr_out, &len);
+                    recvfrom(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL);
                     sendto(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*)&childaddr, sizeof(childaddr));
                 }
             }//ends the childs big while for select

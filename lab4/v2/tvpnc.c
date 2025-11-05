@@ -14,13 +14,13 @@ int main(int argc, char const* argv[]){
             exit(1);
     }
     const char * ip_ts = argv[1];
-    int pn_ts = htons(atoi(argv[2]));
+    unsigned short pn_ts = htons(atoi(argv[2]));
     const char * secret = argv[3];
-    unsigned int ip_UDPc;
+    unsigned long ip_UDPc;
     inet_pton(AF_INET, argv[4], &ip_UDPc);
-    unsigned int ip_fd;//const char * ip_fd ip_fd = argv[5];
+    unsigned long ip_fd;//const char * ip_fd ip_fd = argv[5];
     inet_pton(AF_INET, argv[5], &ip_fd);
-    int pn_fd = htons(atoi(argv[6]));
+    unsigned short pn_fd = htons(atoi(argv[6]));
 
     //socket()
     int sd;
@@ -41,27 +41,30 @@ int main(int argc, char const* argv[]){
         exit(-1);
     }
 
-    char int_secret[18];
+    char int_secret[sizeof(unsigned int) + 6 + sizeof(unsigned long)+ sizeof(unsigned short) + sizeof(unsigned long)] = {0};
     unsigned int code = 315;
     memcpy(int_secret, &code, sizeof(unsigned int));
-    memcpy(int_secret+2, secret, 6);
-    memcpy(int_secret+8, &ip_fd, 4);
-    memcpy(int_secret+12, &pn_fd, 2);
-    memcpy(int_secret+14, &ip_UDPc, 4);
+    memcpy(int_secret+(sizeof(unsigned int)), secret, 6);
+    printf("sending %lu \n", ip_fd);
+    memcpy(int_secret+6+(sizeof(unsigned int)), &ip_fd, sizeof(unsigned long));
+    printf("sending %hu\n", pn_fd);
+    memcpy(int_secret+6+sizeof(unsigned long)+(sizeof(unsigned int)), &pn_fd, sizeof(unsigned short));
+    printf("sending %lu \n", ip_UDPc);
+    memcpy(int_secret+6 +sizeof(unsigned long) + sizeof(unsigned short)+(sizeof(unsigned int)), &ip_UDPc, sizeof(unsigned long));
     //write()
-    write(sd, int_secret, 18);
+    write(sd, int_secret, sizeof(unsigned int) + 6 + sizeof(unsigned long)+ sizeof(unsigned short) + sizeof(unsigned long));
     
     //read()
     char hopefully_secret[6];
     read(sd, hopefully_secret, 6);
-    if (strcmp(secret, hopefully_secret) != 0){
+    if (strncmp(secret, hopefully_secret, 6) != 0){
         printf("wrong secret, terminating\n");
         close(sd);
         exit(-1);
     }
-    int provided_port;
-    read(sd, &provided_port, 2);
-    printf("the provided port number is:\t%d\n", provided_port);
+    unsigned short provided_port;
+    read(sd, &provided_port, sizeof(unsigned short));
+    printf("the provided port number is:\t%hu\n", ntohs(provided_port));
 }
 
 
