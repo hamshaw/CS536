@@ -163,17 +163,17 @@ int main(int argc, char const* argv[]){
             memset(&clientaddr, 0, sizeof(clientaddr));
 	    clientaddr.sin_family = AF_INET;
 	    
-	    //sd
+	    //sock
             //new_sd
             //new_sd_out
             fd_set readfds;
             int max_fd;
             while(1){
                 FD_ZERO(&readfds);
-                FD_SET(sd, &readfds);
+                FD_SET(sock, &readfds);
                 FD_SET(new_sd, &readfds);
                 FD_SET(new_sd_out, &readfds);
-                max_fd = sd;
+                max_fd = sock;
                 if (new_sd > max_fd) max_fd = new_sd;
                 if (new_sd_out > max_fd) max_fd = new_sd_out;
                 max_fd += 1;
@@ -184,18 +184,20 @@ int main(int argc, char const* argv[]){
                     break;
                 }
 		printf("select success\n");
-                if (FD_ISSET(sd, &readfds)){
+                if (FD_ISSET(sock, &readfds)){
                     //sd is ready
-                    char hopefully_secret2[6];
-                    read(sd, hopefully_secret2, 6);
+		    printf("recieved something from tcp\n");
+		    char hopefully_secret2[6];
+                    read(sock, hopefully_secret2, 6);
                     if (strncmp(secret, hopefully_secret2, 6) != 0){
-                        printf("received bad secret, not terminating\n");
+                        printf("received bad secret %s, not terminating\n", hopefully_secret2);
                     }else{
                         printf("recieved secret, terminating\n");
                         forwardtab[sessionindex].sourceaddr = 0;//make shared mem
                         close(new_sd);
                         close(new_sd_out);
                         close(sd);
+			close(sock);
                         munmap(forwardtab, NUMSESSIONS*sizeof(struct tunneltab));
                         break;
                     }
@@ -207,8 +209,6 @@ int main(int argc, char const* argv[]){
                     int len = sizeof(clientaddr);
                     recvfrom(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*) &clientaddr, &len);
 
-                    buffer[99] = '\0';
-		    printf("got %s from client\n", buffer);
 		    sendto(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*) &fdaddr, sizeof(fdaddr));
                 }
                 if (FD_ISSET(new_sd_out, &readfds)){
@@ -220,7 +220,8 @@ int main(int argc, char const* argv[]){
                     sendto(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr));
                 }
             }//ends the childs big while for select
-            exit(0);
+            printf("child done\n");
+	    exit(0);
         }else{//parent code
             int status;
             waitpid(pid, &status, 0);

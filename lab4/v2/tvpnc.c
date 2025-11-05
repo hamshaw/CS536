@@ -65,6 +65,24 @@ int main(int argc, char const* argv[]){
     unsigned short provided_port;
     read(sd, &provided_port, sizeof(unsigned short));
     printf("the provided port number is:\t%hu\n", ntohs(provided_port));
+    
+    char key[7] = {0};
+    key[6] = '\0';
+    while (1) {
+        printf("Enter secret to terminate: ");
+        
+        if (fgets(key, sizeof(key), stdin) == NULL) {
+            printf("fgets failed");
+            return 1;
+        }
+
+        key[strcspn(key, "\n")] = '\0';
+	write(sd, key, 6);
+        if (strncmp(key, secret, 6) == 0) {
+            break;
+        }
+    }
+	close(sd);
 }
 
 
