@@ -45,11 +45,8 @@ int main(int argc, char const* argv[]){
     unsigned int code = 315;
     memcpy(int_secret, &code, sizeof(unsigned int));
     memcpy(int_secret+(sizeof(unsigned int)), secret, 6);
-    printf("sending %lu \n", ip_fd);
     memcpy(int_secret+6+(sizeof(unsigned int)), &ip_fd, sizeof(unsigned long));
-    printf("sending %hu\n", pn_fd);
     memcpy(int_secret+6+sizeof(unsigned long)+(sizeof(unsigned int)), &pn_fd, sizeof(unsigned short));
-    printf("sending %lu \n", ip_UDPc);
     memcpy(int_secret+6 +sizeof(unsigned long) + sizeof(unsigned short)+(sizeof(unsigned int)), &ip_UDPc, sizeof(unsigned long));
     //write()
     write(sd, int_secret, sizeof(unsigned int) + 6 + sizeof(unsigned long)+ sizeof(unsigned short) + sizeof(unsigned long));

@@ -1,4 +1,4 @@
-This application implements a tunneling system as a toy VPN.
+This application implements a tunneling system as a toy VPN for IPv6.
 
 To use:
     run make on the terminal

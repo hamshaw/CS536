@@ -89,11 +89,8 @@ int main(int argc, char const* argv[]){
         }
 
         read(sock, &(forwardtab[sessionindex].destaddr), sizeof(unsigned long));
-        printf("here1 %lu\n", forwardtab[sessionindex].destaddr);
 	read(sock, &(forwardtab[sessionindex].destpt), sizeof(unsigned short));
-        printf("here2\n");
 	read(sock, &(forwardtab[sessionindex].sourceaddr), sizeof(unsigned long));
-	printf("this is the port recieved: %d\n", forwardtab[sessionindex].destpt);
         int pid = fork();
         if (pid == 0){//child code
             //do stuffi
@@ -216,10 +213,10 @@ int main(int argc, char const* argv[]){
             }//ends the childs big while for select
             printf("child done\n");
 	    exit(0);
-        }else{//parent code
-            int status;
-            waitpid(pid, &status, 0);
-        }
+        }//else{//parent code
+            //int status;
+          //  waitpid(pid, &status, 0);
+        //}
     }//end of huge while
     return 0;
 }

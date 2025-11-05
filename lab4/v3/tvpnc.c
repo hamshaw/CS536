@@ -10,7 +10,7 @@
 //client
 int main(int argc, char const* argv[]){
     if (argc != 7){
-            printf("please enter IPv4 and port of tunneling server, the secret, IPv4 of UDP client, and IPv4 and port of final destination (6)\n");
+            printf("please enter IPv6 and port of tunneling server, the secret, IPv6 of UDP client, and IPv6 and port of final destination (6)\n");
             exit(1);
     }
     const char * ip_ts = argv[1];

@@ -15,7 +15,7 @@
 //server
 int main(int argc, char const* argv[]){
     if (argc != 4){
-            printf("please enter IPv4 address of server, the socket number, and secret\n");
+            printf("please enter IPv6 address of server, the socket number, and secret\n");
             exit(1);
     }
 
