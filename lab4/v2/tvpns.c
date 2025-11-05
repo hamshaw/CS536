@@ -108,16 +108,19 @@ int main(int argc, char const* argv[]){
                 printf("CREATING SOCKET FAILED\n");
                 exit(-1);
             }
-            struct sockaddr_in childaddr;
+            struct sockaddr_in childaddr, fdaddr;
+
+	    memset(&fdaddr, 0, sizeof(fdaddr));
             memset(&childaddr, 0, sizeof(childaddr));
-            childaddr.sin_addr.s_addr = forwardtab[sessionindex].sourceaddr;//sin_addr.s_addr?
-            char ip_str[INET_ADDRSTRLEN];
-	    inet_ntop(AF_INET, &childaddr.sin_addr, ip_str, sizeof(ip_str));
-	    printf("here is the ip address its using %s and %u\n", ip_str, childaddr.sin_addr.s_addr);
-	    //inet_pton(AF_INET, forwardtab[sessionindesx].sourceaddr, &(childaddr.sin_addr));
-            childaddr.sin_addr.s_addr = htonl(INADDR_ANY);//inet_addr(ip_str);
+	    
+	    fdaddr.sin_family = AF_INET;
+	    fdaddr.sin_addr.s_addr = forwardtab[sessionindex].destaddr;//CONTAINS FINAL DEST INFO 
+	    fdaddr.sin_port = forwardtab[sessionindex].destpt;
+            
+            childaddr.sin_addr.s_addr = htonl(INADDR_ANY);//CONTAINS servers port with which it will reach ping client
 	    childaddr.sin_family = AF_INET;
-            unsigned short port2 = 55500;
+            
+	    unsigned short port2 = 55500;
             for (int j = 0; j< 100; j++){//CHANGE TO WHILE(1)
                 childaddr.sin_port = htons(port2);
                 if (bind(new_sd, (struct sockaddr*)&childaddr, sizeof(childaddr)) == 0){//success
@@ -139,13 +142,13 @@ int main(int argc, char const* argv[]){
                 printf("CREATING SOCKET FAILED\n");
                 exit(-1);
             }
-            struct sockaddr_in childaddr_out;
+            struct sockaddr_in childaddr_out;//CONTAINS SERVERS INFO, TO CONTACT FD
             memset(&childaddr_out, 0, sizeof(childaddr_out));
             childaddr_out.sin_addr.s_addr = htonl(INADDR_ANY);//forwardtab[sessionindex].destaddr;//sin_addr.s_addr?
-            //inet_pton(AF_INET, forwardtab[sessionindex].destaddr, &(childaddr_out.sin_addr));
             childaddr_out.sin_family = AF_INET;
-            int port = 57500;
-		//exit(1);
+            
+	    int port = 57500;
+	
             for (int p = 0; p<200; p++){
                 childaddr_out.sin_port = htons(port);
                 if (bind(new_sd_out, (struct sockaddr*)&childaddr_out, sizeof(childaddr_out)) == 0){//success
@@ -156,12 +159,11 @@ int main(int argc, char const* argv[]){
                 printf("out - failed to bind to %d\n", port);
                 port++;
             }
-	    struct sockaddr_in childaddr_out_dest;
-            memset(&childaddr_out_dest, 0, sizeof(childaddr_out_dest));
-    	    childaddr_out_dest.sin_port = htons(50505);//forwardtab[sessionindex].destpt;
-            childaddr_out_dest.sin_family = AF_INET;
-            childaddr_out_dest.sin_addr.s_addr = inet_addr("10.168.53.15");//forwardtab[sessionindex].destaddr;
-            //sd
+	    struct sockaddr_in clientaddr;
+            memset(&clientaddr, 0, sizeof(clientaddr));
+	    clientaddr.sin_family = AF_INET;
+	    
+	    //sd
             //new_sd
             //new_sd_out
             fd_set readfds;
@@ -202,17 +204,20 @@ int main(int argc, char const* argv[]){
                     //new_sd is ready
 		    printf("got a message from client\n");
                     char buffer[100] = {0};
-                    int len = sizeof(childaddr);
-                    recvfrom(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL);
-                    sendto(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*) &childaddr_out_dest, sizeof(childaddr_out_dest));
+                    int len = sizeof(clientaddr);
+                    recvfrom(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*) &clientaddr, &len);
+
+                    buffer[99] = '\0';
+		    printf("got %s from client\n", buffer);
+		    sendto(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*) &fdaddr, sizeof(fdaddr));
                 }
                 if (FD_ISSET(new_sd_out, &readfds)){
                     //new_sd_out is ready
 		    printf("got a message from server\n");
                     char buffer[100] = {0};
-                    int len = sizeof(childaddr);
-                    recvfrom(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL);
-                    sendto(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*)&childaddr, sizeof(childaddr));
+                    int len = sizeof(fdaddr);
+                    recvfrom(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL);//&fdaddr, &len);
+                    sendto(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr));
                 }
             }//ends the childs big while for select
             exit(0);
