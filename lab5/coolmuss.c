@@ -65,9 +65,9 @@ int main(int argc, char const* argv[]){
         
         //read()
         ssize_t bytes;
-        char hopefully_password[6];
+        char hopefully_secret[6];
         char filename[10];
-        bytes = read(sock, hopefully_password, 6);
+        bytes = read(sock, hopefully_secret, 6);
         bytes = read(sock, filename, 10);
         
         char ip_str[INET_ADDRSTRLEN];
@@ -76,9 +76,9 @@ int main(int argc, char const* argv[]){
         //Handling REGEX
         int reti = regcomp(&regex, FILENAME_PATTERN, REGEXTENDED);
         regmatch_t match;
-        int regexret = regexec(&regex, filename, &match, 0);
+        int regexret = regexec(&regex, filename, 1, &match, 0);
 
-        if(strncmp(password, hopefully_password, 6) != 0 || REGEX THING){//REGEX HERE
+        if(strncmp(SECRET, hopefully_secret, 6) != 0 || REGEX THING){//REGEX HERE
             printf("received invalid password or filename from client, ignoring client\n");
             write(sock, E, 1);//sending client "E"
             close(sock);

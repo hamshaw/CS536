@@ -48,13 +48,13 @@ int main(int argc, char const* argv[]){
         printf("connect failed\n");
         exit(-1);
     }
-    write(sd, secret, 6);
+    write(sd, SECRET, 6);
     write(sd, audioFile, fileNameLen);
 
     //read() for A or E
     char AorE;
     read(sd, &AorE, 1);
-    if (AorE != 'A'){
+    if (AorE != A){
         printf("Server refused connecting (recieved: %c), exiting\n", AorE);
         exit(-1);
     }
