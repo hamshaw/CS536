@@ -10,6 +10,7 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <regex.h>
 //server
 int main(int argc, char const* argv[]){
     if (argc != 5){
@@ -21,7 +22,7 @@ int main(int argc, char const* argv[]){
     float invlambda = atoi(argv[1]);//NOT CORRECT CONVERSION
     char logfile[] = "datalog.dat.1";//just hard coding this in bec who cares
                                      //change logfile[12] = client number for each new client
-    //choosing to ignore the server IP address bec not needed i think
+    const char * serverIP = argv[3];
     unsigned short pn = atoi(argv[4]);
 
     //mmap()
@@ -72,6 +73,11 @@ int main(int argc, char const* argv[]){
         char ip_str[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(address.sin_addr), ip_str, INET_ADDRSTRLEN);
 
+        //Handling REGEX
+        int reti = regcomp(&regex, FILENAME_PATTERN, REGEXTENDED);
+        regmatch_t match;
+        int regexret = regexec(&regex, filename, &match, 0);
+
         if(strncmp(password, hopefully_password, 6) != 0 || REGEX THING){//REGEX HERE
             printf("received invalid password or filename from client, ignoring client\n");
             write(sock, E, 1);//sending client "E"
@@ -114,9 +120,9 @@ int main(int argc, char const* argv[]){
             //write(A)
             write(sock, A, 1);
 
-            //read portnumber, blocksize
-            read(sock, clients[sessionindex].pn, 2);
-            read(sock, clients[sessionindex].blocksize, 2);
+            //read portnumber (already converted), blocksize
+            read(sock, clients[sessionindex].pn, sizeof(unsigned short));
+            read(sock, clients[sessionindex].blocksize, sizeof(unsigned short));
 
             //create addr to communicate with this client
             struct sockaddr_in childaddr;
