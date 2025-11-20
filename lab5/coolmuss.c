@@ -11,6 +11,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <regex.h>
+#include "coolmuss.h"
+
 //server
 int main(int argc, char const* argv[]){
     if (argc != 5){
@@ -84,7 +86,7 @@ int main(int argc, char const* argv[]){
             close(sock);
             continue;
         }else printf("Valid client request (%s, %hu) pertaining to file %s\n", ip_str, address.sin_port, filename);
-
+        
         //check number of clients
         unsigned int sessionindex = -1;
         for (int i = 0; i < NUMSESSIONS; i++){
@@ -94,6 +96,7 @@ int main(int argc, char const* argv[]){
                 clients[i].sessionindex = i;
                 clients[i].IPaddr = address.sin_addr;
                 clients[i].pn = address.sin_port;
+                memcpy(clients[i].filename, filename, 10);//check memcpy syntax
                 break;
             }
         }
@@ -116,7 +119,7 @@ int main(int argc, char const* argv[]){
                 exit(-1);
             }
             //bind() - UDP
-
+            
             //write(A)
             write(sock, A, 1);
 
@@ -126,6 +129,7 @@ int main(int argc, char const* argv[]){
 
             //create addr to communicate with this client
             struct sockaddr_in childaddr;
+            int lenca = sizeof(childaddr);
             childaddr.sin_faily = AF_INET;
             childaddr.sin_addr.saddr = clients[sessionindex].IPaddr;
             childaddr.sin_port = clients[sessionindex].pn;
@@ -136,7 +140,49 @@ int main(int argc, char const* argv[]){
             //if we say if select() == 0 then didnt recieve anything, send another packet
             //if select() is not zero, then look at ack and update invlambda 
             //before sending another packet
-        
+            
+            FILE *file = fopen(clients[sessionindex].filename, "rb");
+            if (!file){
+                printf("error opening file");
+            }
+            fseek(file, 0, SEEK_END);
+            float filesize = (float)ftell(file);
+            rewind(file);
+            char *buffer = malloc(sizeof(char)*filesize +1);
+            size_t bytesRead = fread(buffer, 1, filesize, file);
+            buffer[bytesRead] = '\0';
+            fclose(file);
+            
+            //How many packets we sending?
+            int numPackets = (int)ceil(filesize/clients[sessionindex].blocksize);
+            int i = 0;
+
+            fd_set readfds;
+            int max_fd;
+
+            //need this for select??
+            struct timeval notime;
+            memset(notime, 0, sizeof(timeval));
+
+            //while()/select()
+            while(i < numPackets){//something
+                FD_ZERO(&READFDS);
+                FD_SET(sdUDP, &READFDS);//HMMMM
+                max_fd = sdUDP+1;
+                int ready = select(max_fd, &readfds, NULL, NULL, notime);//last arg timeval = 0?
+                if (ready < 0){
+                    printf("select failed\n");
+                    exit(1);
+                }
+                if (ready == 0){//we dont have an updated sending rate
+                    nanosleep(invlamda);
+                    sendto(sdUDP, buffer[i*clients[sessionindex].blocksize], clients[sessionindex].blocksize);
+                    i++;
+                }else(FD_ISSET(sdUDP, &readfds)){//we have an updated sending rate
+                    recvfrom(sdUDP, &invlambda, sizeof(float), 0, (struct sockaddr*) &childaddr &lenca);
+                    printf("got new sending rate from client, lambda = %f\n", 1/invlambda);
+                }
+            }//end sending and receiving while()
         }//end child code
         else{//parent code
         

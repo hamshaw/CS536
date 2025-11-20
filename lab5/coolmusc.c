@@ -10,6 +10,8 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include "coolmusc.h"
+
 //client
 int main(int argc, char const* argv[]){
     if (argc != 7){
@@ -28,7 +30,12 @@ int main(int argc, char const* argv[]){
     float invgamma = argv[4];
     char paramsFile[] = argv[5];//same string problem
     char datalogFile[] = argv[6];//same string problem
-    
+   
+    //read params file
+    struct client_params cp;
+    memset(cp, 0, sizeof(cp));
+    int ret = load_params(paramsFile, cp);
+
     //socket() - TCP
     int sd;
     if ((sd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -86,7 +93,7 @@ int main(int argc, char const* argv[]){
 
     //write() UDPport number and the blocksize
     write(sd, UDPport, sizeof(unsigned short));
-    write(sd, BLOCKSIZE, sizeof(unsigned short));//CHECK TYPE OF BLOCKSIZE IN INSTRUCTIONS
+    write(sd, cp.BLOCKSIZE, sizeof(unsigned short));//CHECK TYPE OF BLOCKSIZE IN INSTRUCTIONS
 
     //START RECIEVING INFO FROM SERVER
     //SEND BACK ACKS PERTAINING TO CONGESTION CONTROL
