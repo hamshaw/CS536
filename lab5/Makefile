@@ -1,0 +1,11 @@
+all: server client objects
+server: coolmuss.c
+	gcc -o coolmuss coolmuss.c load_params.c muaudio.c 
+client: coolmusc.c 
+	gcc -o coolmusc coolmusc.c.c
+
+objects:
+	gcc -c coolmuss.c -o coolmuss.o
+	gcc -c coolmusc.c -o coolmusc.o
+clean:
+	find . -type f ! -name "*.dat" ! -name "README" ! -name "*.c" ! -name "*.h" ! -name "Makefile" -delete

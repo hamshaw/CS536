@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <alsa/asoundlib.h>
 #include <unistd.h>
-
+#include "coolmusc.h"
 /* audio codec library functions */
 
 static snd_pcm_t *mulawdev;
@@ -43,7 +43,11 @@ void mulawclose(void) {
         snd_pcm_drain(mulawdev);
         snd_pcm_close(mulawdev);
 }
-
+void *player_thread(void *arg) {
+    int slptime = *(int*)arg;
+    play(pipefd[0], slptime);
+    return NULL;
+}
 int play(int fd, int slptime){
     char *buf;      // audio buffer: holds one block
     size_t bufsiz;          // audio block size (4096 bytes)

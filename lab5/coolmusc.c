@@ -98,13 +98,17 @@ int main(int argc, char const* argv[]){
 
     //START RECIEVING INFO FROM SERVER
     //SEND BACK ACKS PERTAINING TO CONGESTION CONTROL
+    pthread_t pt;
     pipe(pipefd);
     pthread_create(&pt, NULL, player_thread, invgamma);//add file nameeeeeee
     
     float invlambdat = invlambda;//prolly not int, check
     char buffer[cp.BLOCKSIZE];
     while (1){
-        recvfrom(UDPsock, buffer, sizeof(buffer), 0, (struct sockaddr *)&UDPaddr, &lenUa);
+        if (recvfrom(UDPsock, buffer, sizeof(buffer), 0, (struct sockaddr *)&UDPaddr, &lenUa)==0){
+            printf("got entire file\n");
+            break;
+        }
         write(pipefd[1], buffer, cp.BLOCKSIZE);
         //get stats, send ack!!
         //check unread data in pipe (aka Q(t))
@@ -122,12 +126,18 @@ int main(int argc, char const* argv[]){
          */
 
         sendto(UDPsock, invlambdat, sizeof(invlambdat), 0, (struct sockaddr *)&UDPaddr, lenUa);
+        printf("sending server new lamda: %f\n", 1/invlambdat);
 
-        
-
-
+    }//end while(1)
+    while(1){
+        int end=-1;
+        ioctl(pipefd[0], FIONREAD, &Qt);
+        if (end==0) break;
+        sleep(1);
+        printf("playing...\n");
     }
-
+    pthread_cancel(pt);
+    printf("done\n")
 }//end main
 
 
