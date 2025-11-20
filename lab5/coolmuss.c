@@ -156,6 +156,8 @@ int main(int argc, char const* argv[]){
             //How many packets we sending?
             int numPackets = (int)ceil(filesize/clients[sessionindex].blocksize);
             int i = 0;
+            struct timeval timestamps[numpackets];
+            float ivls[numpackets] = {0};
 
             fd_set readfds;
             int max_fd;
@@ -180,9 +182,16 @@ int main(int argc, char const* argv[]){
                     i++;
                 }else(FD_ISSET(sdUDP, &readfds)){//we have an updated sending rate
                     recvfrom(sdUDP, &invlambda, sizeof(float), 0, (struct sockaddr*) &childaddr &lenca);
-                    printf("got new sending rate from client, lambda = %f\n", 1/invlambda);
+                    struct timeval now;
+                    gettimeofday(&now);
+                    timestamps[i] = now;
+                    invls[i] = invlambda;
+                    printf("got new sending rate from client, lambda = %f\n@ time: %d", 1/invlambda, now.tv_usec);
                 }
             }//end sending and receiving while()
+            //write everything to our info file
+            //make sure to chnage the name of the file based on session index!
+            //set session index = 0?
         }//end child code
         else{//parent code
         

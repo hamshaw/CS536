@@ -44,6 +44,38 @@ void mulawclose(void) {
         snd_pcm_close(mulawdev);
 }
 
+int play(int fd, int slptime){
+    char *buf;      // audio buffer: holds one block
+    size_t bufsiz;          // audio block size (4096 bytes)
+    
+    mulawopen(&bufsiz);             // initialize audio codec
+    buf = (char *)malloc(bufsiz);   // audio buffer
+
+    // read from .au file argv[1] and send to ALSA audio device
+    while (1) {
+        ssize_t n = read(fd1, buf, bufsiz);
+
+        if (n > 0) {
+            mulawwrite(buf);
+            usleep(slptime);        // pace writing to audio codec
+        }
+        else if (n == 0) {
+            continue;
+        }
+        else {
+            // read error
+            perror("read");
+            break;
+        }
+    }
+
+    mulawclose();
+    free(buf);
+
+    return 0;
+}
+
+
 /*
 Example playback app of .au audio files that behaves similarly to aplay.
 

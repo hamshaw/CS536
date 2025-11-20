@@ -76,7 +76,8 @@ int main(int argc, char const* argv[]){
     }
 
     struct sockaddr_in UDPaddr;
-    memset(&UDPaddr, 0, sizeof(UDPaddr));
+    int lenUa = sizeof(UDPaddr);
+    memset(&UDPaddr, 0, lenUa);
     UDPaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     UDPaddr.sin_family = AF_INET;
 
@@ -97,6 +98,15 @@ int main(int argc, char const* argv[]){
 
     //START RECIEVING INFO FROM SERVER
     //SEND BACK ACKS PERTAINING TO CONGESTION CONTROL
+    pipe(pipefd);
+    pthread_create(&pt, NULL, player_thread, &invlambda);//add file nameeeeeee
+
+    char buffer[cp.BLOCKSIZE];
+    while (1){
+        recvfrom(UDPsock, buffer, sizeof(buffer), 0, (struct sockaddr *)&UDPaddr, &lenUa);
+        write(pipefd[1], buffer, cp.BLOCKSIZE);
+        //get stats, send ack!!
+    }
 
 }//end main
 
