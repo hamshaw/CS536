@@ -7,12 +7,14 @@
 #include <netinet/in.h>
 #include <signal.h>
 #include <net/if.h>
+#include <time.h>
+#include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <regex.h>
 #include "coolmuss.h"
-
+#include <math.h>
 //server
 int main(int argc, char const* argv[]){
     if (argc != 5){
@@ -76,13 +78,14 @@ int main(int argc, char const* argv[]){
         inet_ntop(AF_INET, &(address.sin_addr), ip_str, INET_ADDRSTRLEN);
 
         //Handling REGEX
-        int reti = regcomp(&regex, FILENAME_PATTERN, REGEXTENDED);
+        regex_t regex;
+        int reti = regcomp(&regex, FILENAME_PATTERN, REG_EXTENDED);
         regmatch_t match;
         int regexret = regexec(&regex, filename, 1, &match, 0);
 
-        if(strncmp(SECRET, hopefully_secret, 6) != 0 || REGEX THING){//REGEX HERE
+        if(strncmp(SECRET, hopefully_secret, 6) != 0 || regexret == 0){//REGEX HERE
             printf("received invalid password or filename from client, ignoring client\n");
-            write(sock, E, 1);//sending client "E"
+            write(sock, &E, 1);//sending client "E"
             close(sock);
             continue;
         }else printf("Valid client request (%s, %hu) pertaining to file %s\n", ip_str, address.sin_port, filename);
@@ -94,15 +97,15 @@ int main(int argc, char const* argv[]){
                 printf("initalizing connection #%d\n", i);
                 sessionindex = i;
                 clients[i].sessionindex = i;
-                clients[i].IPaddr = address.sin_addr;
+                clients[i].IPaddr = address.sin_addr.s_addr;
                 clients[i].pn = address.sin_port;
-                memcpy(clients[i].filename, filename, 10);//check memcpy syntax
+                ///memcpy(clients[i].filename, filename, 10);//check memcpy syntax
                 break;
             }
         }
         if (sessionindex == -1){
             printf("requests exceed NUMSESSIONS, dropping connection\n");
-            write(sock, E, 1);//sending E if we cant take a client?? check if need
+            write(sock, &E, 1);//sending E if we cant take a client?? check if need
             continue;
         }
         
@@ -121,17 +124,17 @@ int main(int argc, char const* argv[]){
             //bind() - UDP
             
             //write(A)
-            write(sock, A, 1);
+            write(sock, &A, 1);
 
             //read portnumber (already converted), blocksize
-            read(sock, clients[sessionindex].pn, sizeof(unsigned short));
-            read(sock, clients[sessionindex].blocksize, sizeof(unsigned short));
+            read(sock, &(clients[sessionindex].pn), sizeof(unsigned short));
+            read(sock, &(clients[sessionindex].blocksize), sizeof(unsigned short));
 
             //create addr to communicate with this client
             struct sockaddr_in childaddr;
             int lenca = sizeof(childaddr);
-            childaddr.sin_faily = AF_INET;
-            childaddr.sin_addr.saddr = clients[sessionindex].IPaddr;
+            childaddr.sin_family = AF_INET;
+            childaddr.sin_addr.s_addr = clients[sessionindex].IPaddr;
             childaddr.sin_port = clients[sessionindex].pn;
 
 
@@ -141,7 +144,7 @@ int main(int argc, char const* argv[]){
             //if select() is not zero, then look at ack and update invlambda 
             //before sending another packet
             
-            FILE *file = fopen(clients[sessionindex].filename, "rb");
+            FILE *file = fopen(filename, "rb");
             if (!file){
                 printf("error opening file");
             }
@@ -156,37 +159,43 @@ int main(int argc, char const* argv[]){
             //How many packets we sending?
             int numPackets = (int)ceil(filesize/clients[sessionindex].blocksize);
             int i = 0;
-            struct timeval timestamps[numpackets];
-            float ivls[numpackets] = {0};
+            struct timeval *timestamps = calloc(numPackets, sizeof(struct timeval));
+            float *ivls = calloc(numPackets, sizeof(float));
 
             fd_set readfds;
             int max_fd;
 
             //need this for select??
             struct timeval notime;
-            memset(notime, 0, sizeof(timeval));
+            memset(&notime, 0, sizeof(notime));
+
+            //need this for nanosleep?
+            struct timespec sleeptime;
+            sleeptime.tv_sec = 0;
+            //sleeptime.tv_nsec = invlambda;
 
             //while()/select()
             while(i < numPackets){//something
-                FD_ZERO(&READFDS);
-                FD_SET(sdUDP, &READFDS);//HMMMM
+                sleeptime.tv_nsec = invlambda;
+                FD_ZERO(&readfds);
+                FD_SET(sdUDP, &readfds);//HMMMM
                 max_fd = sdUDP+1;
-                int ready = select(max_fd, &readfds, NULL, NULL, notime);//last arg timeval = 0?
+                int ready = select(max_fd, &readfds, NULL, NULL, &notime);//last arg timeval = 0?
                 if (ready < 0){
                     printf("select failed\n");
                     exit(1);
                 }
                 if (ready == 0){//we dont have an updated sending rate
-                    nanosleep(invlamda);
-                    sendto(sdUDP, buffer[i*clients[sessionindex].blocksize], clients[sessionindex].blocksize);
+                    nanosleep(&sleeptime, NULL);
+                    sendto(sdUDP, &(buffer[i*clients[sessionindex].blocksize]), clients[sessionindex].blocksize, 0, (struct sockaddr *)&childaddr, lenca);
                     i++;
-                }else(FD_ISSET(sdUDP, &readfds)){//we have an updated sending rate
-                    recvfrom(sdUDP, &invlambda, sizeof(float), 0, (struct sockaddr*) &childaddr &lenca);
+                }else if (FD_ISSET(sdUDP, &readfds)){//we have an updated sending rate
+                    recvfrom(sdUDP, &invlambda, sizeof(float), 0, (struct sockaddr*) &childaddr, &lenca);
                     struct timeval now;
-                    gettimeofday(&now);
+                    gettimeofday(&now, NULL);
                     timestamps[i] = now;
-                    invls[i] = invlambda;
-                    printf("got new sending rate from client, lambda = %f\n@ time: %d", 1/invlambda, now.tv_usec);
+                    ivls[i] = invlambda;
+                    printf("got new sending rate from client, lambda = %f\n@ time: %ld", 1/invlambda, now.tv_usec);
                 }
             }//end sending and receiving while()
             //write everything to our info file

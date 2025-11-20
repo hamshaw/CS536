@@ -11,6 +11,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include "coolmusc.h"
+#include <time.h>
 
 //client
 int main(int argc, char const* argv[]){
