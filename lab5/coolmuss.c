@@ -21,7 +21,7 @@ int main(int argc, char const* argv[]){
     }
     
     //organize arguements
-    float invlambda = atoi(argv[1]);//NOT CORRECT CONVERSION
+    float invlambda = atof(argv[1])*1000000;//converted to NANO
     char logfile[] = "datalog.dat.1";//just hard coding this in bec who cares
                                      //change logfile[12] = client number for each new client
     const char * serverIP = argv[3];

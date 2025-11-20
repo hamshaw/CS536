@@ -33,7 +33,7 @@ int load_params(const char *filename, struct client_params *params) {
             params->TARGETBUF = strtoul(value, NULL, 10);
         } 
         else if (strcmp(key, "INVLAMBDA") == 0) {
-            params->INVLAMBDA = strtof(value, NULL);
+            params->INVLAMBDA = strtof(value, NULL)*1000000;//convert to micro seconds
         } 
         else if (strcmp(key, "EPSILON") == 0) {
             params->EPSILON = strtof(value, NULL);

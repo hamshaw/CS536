@@ -27,7 +27,7 @@ int main(int argc, char const* argv[]){
     }
     const char * serverIP = argv[2];
     unsigned short serverPort = htons(atoi(argv[3]));
-    float invgamma = argv[4];
+    float invgamma = atof(argv[4])*1000000;//in nanoseconds
     char paramsFile[] = argv[5];//same string problem
     char datalogFile[] = argv[6];//same string problem
    
@@ -99,13 +99,33 @@ int main(int argc, char const* argv[]){
     //START RECIEVING INFO FROM SERVER
     //SEND BACK ACKS PERTAINING TO CONGESTION CONTROL
     pipe(pipefd);
-    pthread_create(&pt, NULL, player_thread, &invlambda);//add file nameeeeeee
-
+    pthread_create(&pt, NULL, player_thread, invgamma);//add file nameeeeeee
+    
+    float invlambdat = invlambda;//prolly not int, check
     char buffer[cp.BLOCKSIZE];
     while (1){
         recvfrom(UDPsock, buffer, sizeof(buffer), 0, (struct sockaddr *)&UDPaddr, &lenUa);
         write(pipefd[1], buffer, cp.BLOCKSIZE);
         //get stats, send ack!!
+        //check unread data in pipe (aka Q(t))
+        int Qt = 0;
+        ioctl(pipefd[0], FIONREAD, &Qt);
+        invlambdat = invlambdat + 1/(cp.EPSILON*(cp.TARGETBUF-Qt)) + (1/cp.BETA)*(invgamma-invlambdat);
+        /*
+         i hope:
+         invlambdat = float (1/lam) in nano seconds
+         EPSILON = float (epsilon)
+         TARGETBUF= any (Q* in Bytes)
+         Qt =       amy (Q(t) in bytes) ARE THESE SUPPOSED TO BE PERCENTAGES????
+         BETA =     float (beta)
+         invlambda = float (1/gamma) - outflux in nanoseconds
+         */
+
+        sendto(UDPsock, invlambdat, sizeof(invlambdat), 0, (struct sockaddr *)&UDPaddr, lenUa);
+
+        
+
+
     }
 
 }//end main
