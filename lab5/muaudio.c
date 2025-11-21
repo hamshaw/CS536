@@ -57,7 +57,7 @@ int play(int fd, int slptime){
 
     // read from .au file argv[1] and send to ALSA audio device
     while (1) {
-        ssize_t n = read(fd1, buf, bufsiz);
+        ssize_t n = read(fd, buf, bufsiz);
 
         if (n > 0) {
             mulawwrite(buf);
