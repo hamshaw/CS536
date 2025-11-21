@@ -11,8 +11,8 @@ struct client_params{
     float BETA;
 };
 int pipefd[2];
-static snd_pcm_t *mulawdev;
-static snd_pcm_uframes_t mulawfrms;
+//static snd_pcm_t *mulawdev;
+//static snd_pcm_uframes_t mulawfrms;
 
 #ifndef LOAD_PARAMS_H
 #define LOAD_PARAMS_H
