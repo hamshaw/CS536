@@ -1,8 +1,9 @@
-int NUMSESSIONS = 4;
-char SECRET[] = "secret";
-char A = 'A';
-char E = 'E';
-char FILENAME_PATTERN[] = "[a-zA-Z\\.]{1, 10}";
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
+#define NUMSESSIONS 4
+#define SECRET "secret"
+#define FILENAME_PATTERN "[a-zA-Z\\.]{1, 10}"
+#endif
 
 struct client {
     int sessionindex;

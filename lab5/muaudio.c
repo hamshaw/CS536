@@ -54,6 +54,7 @@ int play(int fd, int slptime){
     size_t bufsiz;          // audio block size (4096 bytes)
     
     mulawopen(&bufsiz);             // initialize audio codec
+    printf("opened play buffer!\n");
     buf = (char *)malloc(bufsiz);   // audio buffer
 
     // read from .au file argv[1] and send to ALSA audio device

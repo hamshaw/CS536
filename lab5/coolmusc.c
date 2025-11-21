@@ -18,6 +18,7 @@
 int pipefd[2];
 
 void *player_thread(void *arg) {
+    printf("in player_thread!\n");
     int slptime = *(int*)arg;
     play(pipefd[0], slptime);
     return NULL;
@@ -31,10 +32,13 @@ int main(int argc, char const* argv[]){
     //organize arguements
     const char * audioFile = argv[1];//string? or will this work
     int fileNameLen;
-    if (fileNameLen = strlen(audioFile)>10){
+    //audioFile[fileNameLen] = '\0';
+    if ((fileNameLen = strlen(audioFile))>10){
         printf("Audio file name too long, exiting\n");
         exit(-1);
     }
+    //audioFile[fileNameLen] = '\0';
+    printf("%s\n", audioFile);
     const char * serverIP = argv[2];
     unsigned short serverPort = htons(atoi(argv[3]));
     float invgamma = atof(argv[4])*1000000;//in nanoseconds
@@ -59,14 +63,21 @@ int main(int argc, char const* argv[]){
     address.sin_port = serverPort;
     inet_pton(AF_INET, serverIP, &(address.sin_addr));
 
+    printf("Connnecting...\n");
+
     //connect()
     int status;
     if ((status = connect(sd, (struct sockaddr*)&address, sizeof(address))) < 0) {
         printf("connect failed\n");
         exit(-1);
     }
-    write(sd, SECRET, 6);
-    write(sd, audioFile, fileNameLen);
+
+
+    char * sanda = calloc(7+fileNameLen, sizeof(char));//]={'\0'};
+    memcpy(sanda, SECRET, 6);
+    memcpy(sanda+6, audioFile, fileNameLen);
+    printf("%s\n", sanda);
+    if (write(sd, sanda, 6+fileNameLen) < 1) printf("failing write\n");
 
     //read() for A or E
     char AorE;
@@ -75,6 +86,7 @@ int main(int argc, char const* argv[]){
         printf("Server refused connecting (recieved: %c), exiting\n", AorE);
         exit(-1);
     }
+    printf("Just received %c from server\n", AorE);
     
     //Starting up UDP connection
 
@@ -105,11 +117,15 @@ int main(int argc, char const* argv[]){
     }
 
     //write() UDPport number and the blocksize
-    write(sd, &UDPport, sizeof(unsigned short));
-    write(sd, &(cp.BLOCKSIZE), sizeof(unsigned short));//CHECK TYPE OF BLOCKSIZE IN INSTRUCTIONS
+    unsigned short portblock[2];
+    portblock[0] = UDPport;
+    portblock[1] = cp.BLOCKSIZE;
+    write(sd, portblock, 2*sizeof(unsigned short));
+    //write(sd, &(cp.BLOCKSIZE), sizeof(unsigned short));//CHECK TYPE OF BLOCKSIZE IN INSTRUCTIONS
 
     //START RECIEVING INFO FROM SERVER
     //SEND BACK ACKS PERTAINING TO CONGESTION CONTROL
+    sleep(5);
     pthread_t pt;
     pipe(pipefd);
     pthread_create(&pt, NULL, player_thread, &invgamma);//add file nameeeeeee

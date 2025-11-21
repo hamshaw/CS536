@@ -21,7 +21,8 @@ int main(int argc, char const* argv[]){
             printf("Expected: >>coolmuss invlambda datalog.dat serberIP serverPort\n");
             exit(1);
     }
-    
+    char Es = 'E';
+    char As = 'A';
     //organize arguements
     float invlambda = atof(argv[1])*1000000;//converted to NANO
     char logfile[] = "datalog.dat.1";//just hard coding this in bec who cares
@@ -34,7 +35,7 @@ int main(int argc, char const* argv[]){
 
     //socket() - TCP
     int sd;
-    if ((sd = socket(AF_INET6, SOCK_STREAM, 0)) < 0) {
+    if ((sd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("creating socket failed");
         exit(-1);
     }
@@ -43,15 +44,15 @@ int main(int argc, char const* argv[]){
     struct sockaddr_in address;
     socklen_t addrlen = sizeof(address);
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_addr.s_addr = htonl(INADDR_ANY);
     address.sin_port = htons(pn);
 
     //bind()
-    if (bind(sd, (struct sockaddr*)&address, sizeof(address)) < 0) {
+    if (bind(sd, (struct sockaddr*)&address, addrlen) < 0) {
         perror("bind failed");
         exit(-1);
     }
-
+	printf("begin listening...\n");
     while(1){
         
         //listen()
@@ -66,29 +67,23 @@ int main(int argc, char const* argv[]){
             perror("accept failed");
             exit(-1);
         }
+	printf("Accepting connection...\n");
         
         //read()
-        ssize_t bytes;
-        char hopefully_secret[6];
-        char filename[10];
-        bytes = read(sock, hopefully_secret, 6);
-        bytes = read(sock, filename, 10);
+        ssize_t bytes1, bytes2;
+        char hopefully_secret[7] = {'\0'};
+        char filename[10] = {'\0'};
+        bytes1 = read(sock, hopefully_secret, 6);
+	bytes2 = read(sock, filename, 7);
         
-        char ip_str[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(address.sin_addr), ip_str, INET_ADDRSTRLEN);
-
+        printf("Received potential secret %s, %ld Bytes and filename %s, %ld Bytes ...\n", hopefully_secret, bytes1, filename, bytes2);
         //Handling REGEX
-        regex_t regex;
-        int reti = regcomp(&regex, FILENAME_PATTERN, REG_EXTENDED);
-        regmatch_t match;
-        int regexret = regexec(&regex, filename, 1, &match, 0);
-
-        if(strncmp(SECRET, hopefully_secret, 6) != 0 || regexret == 0){//REGEX HERE
+        if(strncmp(SECRET, hopefully_secret, 6) != 0){// || regexret == 0){//REGEX HERE
             printf("received invalid password or filename from client, ignoring client\n");
-            write(sock, &E, 1);//sending client "E"
+            write(sock, &Es, 1);//sending client "E"
             close(sock);
             continue;
-        }else printf("Valid client request (%s, %hu) pertaining to file %s\n", ip_str, address.sin_port, filename);
+        }else printf("Valid client request ( %hu) pertaining to file %s\n", address.sin_port, filename);
         
         //check number of clients
         unsigned int sessionindex = -1;
@@ -105,7 +100,7 @@ int main(int argc, char const* argv[]){
         }
         if (sessionindex == -1){
             printf("requests exceed NUMSESSIONS, dropping connection\n");
-            write(sock, &E, 1);//sending E if we cant take a client?? check if need
+            write(sock, &Es, 1);//sending E if we cant take a client?? check if need
             continue;
         }
         
@@ -124,12 +119,12 @@ int main(int argc, char const* argv[]){
             //bind() - UDP
             
             //write(A)
-            write(sock, &A, 1);
+            write(sock, &As, 1);
 
             //read portnumber (already converted), blocksize
             read(sock, &(clients[sessionindex].pn), sizeof(unsigned short));
             read(sock, &(clients[sessionindex].blocksize), sizeof(unsigned short));
-
+	    printf("Got portnum: %hu and blocksize %hu\n", clients[0].pn, clients[0].blocksize);
             //create addr to communicate with this client
             struct sockaddr_in childaddr;
             int lenca = sizeof(childaddr);
