@@ -1,7 +1,10 @@
-char SECRET[] = "secret";
-char A = 'A';
-char E = 'E';
-unsigned short PORTNUM = 55555;
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
+#define SECRET "secret"
+#define A 'A'
+#define E 'E'
+#define PORTNUM 55555
+#endif
 struct client_params{
     unsigned short BLOCKSIZE;
     unsigned long BUFFERSIZE;
@@ -10,7 +13,6 @@ struct client_params{
     float EPSILON;
     float BETA;
 };
-int pipefd[2];
 //static snd_pcm_t *mulawdev;
 //static snd_pcm_uframes_t mulawfrms;
 
@@ -25,12 +27,12 @@ int pipefd[2];
 #define PLAY_H
     int play(int fd, int slptime);
 #endif
-
+/*
 #ifndef PLAYER_THREAD_H
 #define PLAYER_THREAD_H
     void *player_thread(void *arg);
 #endif
-
+*/
 #ifndef MULAWCLOSE_H
 #define MULAWCLOSE_HI
     void mulawclose(void);

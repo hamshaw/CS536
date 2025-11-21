@@ -43,11 +43,12 @@ void mulawclose(void) {
         snd_pcm_drain(mulawdev);
         snd_pcm_close(mulawdev);
 }
+/*
 void *player_thread(void *arg) {
     int slptime = *(int*)arg;
     play(pipefd[0], slptime);
     return NULL;
-}
+}*/
 int play(int fd, int slptime){
     char *buf;      // audio buffer: holds one block
     size_t bufsiz;          // audio block size (4096 bytes)

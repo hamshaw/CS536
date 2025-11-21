@@ -15,6 +15,13 @@
 #include <sys/ioctl.h>
 #include <pthread.h>
 //client
+int pipefd[2];
+
+void *player_thread(void *arg) {
+    int slptime = *(int*)arg;
+    play(pipefd[0], slptime);
+    return NULL;
+}
 int main(int argc, char const* argv[]){
     if (argc != 7){
             printf("Expected: >>coolmusc audiofile serverIP serverPort invgammaa param.dat cdatalog.dat\n");
