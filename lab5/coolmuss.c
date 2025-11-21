@@ -153,7 +153,8 @@ int main(int argc, char const* argv[]){
             
             //How many packets we sending?
             int numPackets = (int)ceil(filesize/clients[sessionindex].blocksize);
-            int i = 0;
+            printf("sending %d packets...\n", numPackets);
+	    int i = 0;
             struct timeval *timestamps = calloc(numPackets, sizeof(struct timeval));
             float *ivls = calloc(numPackets, sizeof(float));
 
@@ -170,7 +171,7 @@ int main(int argc, char const* argv[]){
             //sleeptime.tv_nsec = invlambda;
 
             //while()/select()
-            while(i < numPackets){//something
+            while(i < 20){//something
                 sleeptime.tv_nsec = invlambda;
                 FD_ZERO(&readfds);
                 FD_SET(sdUDP, &readfds);//HMMMM
@@ -182,7 +183,8 @@ int main(int argc, char const* argv[]){
                 }
                 if (ready == 0){//we dont have an updated sending rate
                     nanosleep(&sleeptime, NULL);
-                    sendto(sdUDP, &(buffer[i*clients[sessionindex].blocksize]), clients[sessionindex].blocksize, 0, (struct sockaddr *)&childaddr, lenca);
+                    printf("sending block...\n");
+		    sendto(sdUDP, &(buffer[i*clients[sessionindex].blocksize]), clients[sessionindex].blocksize, 0, (struct sockaddr *)&childaddr, lenca);
                     i++;
                 }else if (FD_ISSET(sdUDP, &readfds)){//we have an updated sending rate
                     recvfrom(sdUDP, &invlambda, sizeof(float), 0, (struct sockaddr*) &childaddr, &lenca);

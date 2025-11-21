@@ -125,7 +125,6 @@ int main(int argc, char const* argv[]){
 
     //START RECIEVING INFO FROM SERVER
     //SEND BACK ACKS PERTAINING TO CONGESTION CONTROL
-    sleep(5);
     pthread_t pt;
     pipe(pipefd);
     pthread_create(&pt, NULL, player_thread, &invgamma);//add file nameeeeeee
@@ -133,7 +132,8 @@ int main(int argc, char const* argv[]){
     float invlambdat = invgamma;//prolly not int, check
     char buffer[cp.BLOCKSIZE];
     while (1){
-        if (recvfrom(UDPsock, buffer, sizeof(buffer), 0, (struct sockaddr *)&UDPaddr, &lenUa)==0){
+	int amt;
+        if ((amt = recvfrom(UDPsock, buffer, sizeof(buffer), 0, (struct sockaddr *)&UDPaddr, &lenUa))==0){
             printf("got entire file\n");
             break;
         }
@@ -155,6 +155,7 @@ int main(int argc, char const* argv[]){
 
         sendto(UDPsock, &invlambdat, sizeof(invlambdat), 0, (struct sockaddr *)&UDPaddr, lenUa);
         printf("sending server new lamda: %f\n", 1/invlambdat);
+	if (amt <cp.BLOCKSIZE) break;
 
     }//end while(1)
     while(1){
