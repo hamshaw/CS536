@@ -9,8 +9,8 @@ struct client_params{
     float INVLAMBDA;
     float EPSILON;
     float BETA;
-}
-
+};
+int pipefd[2];
 static snd_pcm_t *mulawdev;
 static snd_pcm_uframes_t mulawfrms;
 

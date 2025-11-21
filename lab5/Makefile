@@ -2,7 +2,7 @@ all: server client objects
 server: coolmuss.c
 	gcc -o coolmuss coolmuss.c load_params.c muaudio.c 
 client: coolmusc.c 
-	gcc -o coolmusc coolmusc.c.c
+	gcc -o coolmusc coolmusc.c load_params.c muaudio.c
 
 objects:
 	gcc -c coolmuss.c -o coolmuss.o
