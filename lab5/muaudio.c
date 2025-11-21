@@ -52,19 +52,21 @@ void *player_thread(void *arg) {
 int play(int fd, int slptime){
     char *buf;      // audio buffer: holds one block
     size_t bufsiz;          // audio block size (4096 bytes)
-    
+    printf("going to sleep for %d miliseconds inbetween\n", slptime);
+    struct timespec sleeptime;
+    sleeptime.tv_sec = 0;
+    sleeptime.tv_nsec = slptime*1000000; 
     mulawopen(&bufsiz);             // initialize audio codec
     printf("opened play buffer!\n");
     buf = (char *)malloc(bufsiz);   // audio buffer
-
     // read from .au file argv[1] and send to ALSA audio device
     while (1) {
         ssize_t n = read(fd, buf, bufsiz);
 
         if (n > 0) {
             mulawwrite(buf);
-            usleep(slptime);        // pace writing to audio codec
-        }
+            nanosleep(&sleeptime, NULL);        // pace writing to audio codec
+	}
         else if (n == 0) {
             continue;
         }

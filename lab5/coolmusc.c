@@ -19,7 +19,7 @@ int pipefd[2];
 
 void *player_thread(void *arg) {
     printf("in player_thread!\n");
-    int slptime = *(int*)arg;
+    int slptime = 313;//*(int*)arg;
     play(pipefd[0], slptime);
     return NULL;
 }
@@ -41,7 +41,7 @@ int main(int argc, char const* argv[]){
     printf("%s\n", audioFile);
     const char * serverIP = argv[2];
     unsigned short serverPort = htons(atoi(argv[3]));
-    float invgamma = atof(argv[4])*1000000;//in nanoseconds
+    float invgamma = atof(argv[4]);//in MSEC
     const char * paramsFile = argv[5];//same string problem
     const char * datalogFile = argv[6];//same string problem
    
@@ -131,6 +131,7 @@ int main(int argc, char const* argv[]){
     
     float invlambdat = invgamma;//prolly not int, check
     char buffer[cp.BLOCKSIZE];
+    float old;
     while (1){
 	int amt;
         if ((amt = recvfrom(UDPsock, buffer, sizeof(buffer), 0, (struct sockaddr *)&UDPaddr, &lenUa))==0){
@@ -143,9 +144,9 @@ int main(int argc, char const* argv[]){
         int Qt = 0;
         ioctl(pipefd[0], FIONREAD, &Qt);
         invlambdat = invlambdat + 1/(cp.EPSILON*(cp.TARGETBUF-Qt)) + (1/cp.BETA)*(invgamma-invlambdat);
-        /*
+	/*
          i hope:
-         invlambdat = float (1/lam) in nano seconds
+         invlambdat = float (1/lam)
          EPSILON = float (epsilon)
          TARGETBUF= any (Q* in Bytes)
          Qt =       amy (Q(t) in bytes) ARE THESE SUPPOSED TO BE PERCENTAGES????
@@ -153,8 +154,12 @@ int main(int argc, char const* argv[]){
          invlambda = float (1/gamma) - outflux in nanoseconds
          */
 
-        sendto(UDPsock, &invlambdat, sizeof(invlambdat), 0, (struct sockaddr *)&UDPaddr, lenUa);
-        printf("sending server new lamda: %f\n", 1/invlambdat);
+        if (old != invlambdat) {
+		printf("%f vs. %f\n", old, invlambdat);
+		sendto(UDPsock, &invlambdat, sizeof(float), 0, (struct sockaddr *)&UDPaddr, lenUa);
+        	printf("sending server new invlamda: %f\n", invlambdat);
+		old = invlambdat;
+	}
 	if (amt <cp.BLOCKSIZE) break;
 
     }//end while(1)

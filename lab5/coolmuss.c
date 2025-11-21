@@ -24,7 +24,7 @@ int main(int argc, char const* argv[]){
     char Es = 'E';
     char As = 'A';
     //organize arguements
-    float invlambda = atof(argv[1])*1000000;//converted to NANO
+    float invlambda = atof(argv[1]);//in miliseconds
     char logfile[] = "datalog.dat.1";//just hard coding this in bec who cares
                                      //change logfile[12] = client number for each new client
     const char * serverIP = argv[3];
@@ -171,8 +171,8 @@ int main(int argc, char const* argv[]){
             //sleeptime.tv_nsec = invlambda;
 
             //while()/select()
-            while(i < 20){//something
-                sleeptime.tv_nsec = invlambda;
+            while(i < numPackets){//something
+                sleeptime.tv_nsec = invlambda*1000000;
                 FD_ZERO(&readfds);
                 FD_SET(sdUDP, &readfds);//HMMMM
                 max_fd = sdUDP+1;
@@ -192,9 +192,11 @@ int main(int argc, char const* argv[]){
                     gettimeofday(&now, NULL);
                     timestamps[i] = now;
                     ivls[i] = invlambda;
-                    printf("got new sending rate from client, lambda = %f\n@ time: %ld", 1/invlambda, now.tv_usec);
+                    printf("got new sending rate from client, invlambda = %f\n@ time: %ld\n", invlambda, now.tv_usec);
                 }
             }//end sending and receiving while()
+	    printf("done sending to client.\n");
+	    sendto(sdUDP, &Es, 1, 0, (struct sockaddr *)&childaddr, lenca);
             //write everything to our info file
             //make sure to chnage the name of the file based on session index!
             //set session index = 0?
