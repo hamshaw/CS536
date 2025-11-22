@@ -30,7 +30,7 @@ int load_params(const char *filename, struct client_params *params) {
             params->BUFFERSIZE = strtoul(value, NULL, 10);
         } 
         else if (strcmp(key, "TARGETBUF") == 0) {
-            params->TARGETBUF = strtoul(value, NULL, 10);
+            params->TARGETBUF = strtof(value, NULL);
         } 
         else if (strcmp(key, "INVLAMBDA") == 0) {
             params->INVLAMBDA = strtof(value, NULL);

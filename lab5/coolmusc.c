@@ -14,14 +14,23 @@
 #include <time.h>
 #include <sys/ioctl.h>
 #include <pthread.h>
+
 //client
 int pipefd[2];
-
+struct timespec marker;
 void *player_thread(void *arg) {
     printf("in player_thread!\n");
     int slptime = 313;//*(int*)arg;
     play(pipefd[0], slptime);
     return NULL;
+}
+void set_mark(void){
+	clock_gettime(CLOCK_MONOTONIC, &marker);
+}
+double msec_since_mark(void){
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	return (now.tv_sec - marker.tv_sec)*1000 + (now.tv_nsec - marker.tv_nsec)/1000000;
 }
 int main(int argc, char const* argv[]){
     if (argc != 7){
@@ -128,10 +137,11 @@ int main(int argc, char const* argv[]){
     pthread_t pt;
     pipe(pipefd);
     pthread_create(&pt, NULL, player_thread, &invgamma);//add file nameeeeeee
-    
+    set_mark();
     float invlambdat = invgamma;//prolly not int, check
     char buffer[cp.BLOCKSIZE];
-    float old;
+    float old = invgamma;
+    int i = 0;
     while (1){
 	int amt;
         if ((amt = recvfrom(UDPsock, buffer, sizeof(buffer), 0, (struct sockaddr *)&UDPaddr, &lenUa))==0){
@@ -139,11 +149,15 @@ int main(int argc, char const* argv[]){
             break;
         }
         write(pipefd[1], buffer, cp.BLOCKSIZE);
-        //get stats, send ack!!
+        i++;
+	//get stats, send ack!!
         //check unread data in pipe (aka Q(t))
-        int Qt = 0;
-        ioctl(pipefd[0], FIONREAD, &Qt);
-        invlambdat = invlambdat + 1/(cp.EPSILON*(cp.TARGETBUF-Qt)) + (1/cp.BETA)*(invgamma-invlambdat);
+        float Qt = 0;
+
+        float sent = i*cp.BLOCKSIZE;
+	float played = (msec_since_mark()*4096)/invgamma;
+	Qt = sent - played;
+	printf("sent - played = Qt: %f - %f = %f\n", sent, played, Qt);//invlambdat = invlambdat + 1/(cp.EPSILON*(cp.TARGETBUF-Qt)) + (1/cp.BETA)*(invgamma-invlambdat);
 	/*
          i hope:
          invlambdat = float (1/lam)
@@ -153,7 +167,10 @@ int main(int argc, char const* argv[]){
          BETA =     float (beta)
          invlambda = float (1/gamma) - outflux in nanoseconds
          */
-
+	printf("ep: %f\n", cp.EPSILON);
+	printf("Qt %f, Q* %f,  firs: %f\nsecond: %f\n", Qt, cp.TARGETBUF, cp.EPSILON*(Qt-cp.TARGETBUF), cp.BETA*(invgamma - invlambdat));
+	invlambdat = invlambdat + cp.EPSILON*(Qt-cp.TARGETBUF)+cp.BETA*(invgamma -invlambdat);	
+	//invlambdat = 1/(1/invlambdat + cp.EPSILON*(cp.TARGETBUF-Qt)+cp.BETA*(1/invgamma - 1/invlambdat));
         if (old != invlambdat) {
 		printf("%f vs. %f\n", old, invlambdat);
 		sendto(UDPsock, &invlambdat, sizeof(float), 0, (struct sockaddr *)&UDPaddr, lenUa);
