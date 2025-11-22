@@ -14,7 +14,7 @@
 #include <time.h>
 #include <sys/ioctl.h>
 #include <pthread.h>
-
+int CONTROLLAW = 0;
 //client
 int pipefd[2];
 struct timespec marker;
@@ -167,11 +167,8 @@ int main(int argc, char const* argv[]){
     int Qt;
     while (1){
 	int amt;
-        if ((amt = recvfrom(UDPsock, buffer, sizeof(buffer), 0, (struct sockaddr *)&UDPaddr, &lenUa))==0){
-            printf("got entire file\n");
-            break;
-        }
-
+        if ((amt = recvfrom(UDPsock, buffer, sizeof(buffer), 0, (struct sockaddr *)&UDPaddr, &lenUa))==0) break;
+        
         pthread_mutex_lock(&shared.mutex);
         shared.counter += cp.BLOCKSIZE;
         Qt = shared.counter;
@@ -180,7 +177,7 @@ int main(int argc, char const* argv[]){
         write(pipefd[1], buffer, cp.BLOCKSIZE);
         
 	printf("Qt: %d \n", Qt);
-        invlambdat = invlambdat + cp.EPSILON*(Qt-cp.TARGETBUF)+cp.BETA*(invgamma -invlambdat);	
+        if (CONTROLLAW == 0) invlambdat = invlambdat + cp.EPSILON*(Qt-cp.TARGETBUF)+cp.BETA*(invgamma -invlambdat);	
         if (old != invlambdat) {
 		printf("%f vs. %f\n", old, invlambdat);
 		sendto(UDPsock, &invlambdat, sizeof(float), 0, (struct sockaddr *)&UDPaddr, lenUa);
