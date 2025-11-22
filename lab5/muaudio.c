@@ -49,7 +49,7 @@ void *player_thread(void *arg) {
     play(pipefd[0], slptime);
     return NULL;
 }*/
-int play(int fd, int slptime){
+void play(int fd, int slptime, shared_t *shared){
     char *buf;      // audio buffer: holds one block
     size_t bufsiz;          // audio block size (4096 bytes)
     printf("going to sleep for %d miliseconds inbetween\n", slptime);
@@ -64,6 +64,9 @@ int play(int fd, int slptime){
         ssize_t n = read(fd, buf, bufsiz);
 
         if (n > 0) {
+            pthread_mutex_lock(&shared->mutex);
+            shared->counter -= 4096;
+            pthread_mutex_unlock(&shared->mutex);
             mulawwrite(buf);
             nanosleep(&sleeptime, NULL);        // pace writing to audio codec
 	}
@@ -80,7 +83,6 @@ int play(int fd, int slptime){
     mulawclose();
     free(buf);
 
-    return 0;
 }
 
 

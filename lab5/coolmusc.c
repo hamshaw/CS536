@@ -19,9 +19,15 @@
 int pipefd[2];
 struct timespec marker;
 void *player_thread(void *arg) {
+     // Unpack arguments
+    struct thread_args {
+        float * slptime;
+        shared_t *shared;
+    } *args = arg;
+
     printf("in player_thread!\n");
-    int slptime = 313;//*(int*)arg;
-    play(pipefd[0], slptime);
+    //int slptime = 313;//*(int*)arg;
+    play(pipefd[0], *(args->slptime), args->shared);
     return NULL;
 }
 void set_mark(void){
@@ -135,29 +141,41 @@ int main(int argc, char const* argv[]){
     //START RECIEVING INFO FROM SERVER
     //SEND BACK ACKS PERTAINING TO CONGESTION CONTROL
     pthread_t pt;
+
+    shared_t shared = {
+        .counter = 0,
+        .mutex = PTHREAD_MUTEX_INITIALIZER
+    };
+
+    struct thread_args {
+        float * slptime;
+        shared_t *shared;
+    } args = {&invgamma, &shared };
+
     pipe(pipefd);
-    pthread_create(&pt, NULL, player_thread, &invgamma);//add file nameeeeeee
-    set_mark();
+    pthread_create(&pt, NULL, player_thread, &args);//add file nameeeeeee
+    //set_mark();
     float invlambdat = invgamma;//prolly not int, check
     char buffer[cp.BLOCKSIZE];
     float old = invgamma;
-    int i = 0;
+    int Qt;
     while (1){
 	int amt;
         if ((amt = recvfrom(UDPsock, buffer, sizeof(buffer), 0, (struct sockaddr *)&UDPaddr, &lenUa))==0){
             printf("got entire file\n");
             break;
         }
+
+        pthread_mutex_lock(&shared.mutex);
+        shared.counter += cp.BLOCKSIZE;
+        Qt = shared.counter;
+        pthread_mutex_unlock(&shared.mutex);
+        
         write(pipefd[1], buffer, cp.BLOCKSIZE);
-        i++;
+        
 	//get stats, send ack!!
         //check unread data in pipe (aka Q(t))
-        float Qt = 0;
 
-        float sent = i*cp.BLOCKSIZE;
-	float played = (msec_since_mark()*4096)/invgamma;
-	Qt = sent - played;
-	printf("sent - played = Qt: %f - %f = %f\n", sent, played, Qt);//invlambdat = invlambdat + 1/(cp.EPSILON*(cp.TARGETBUF-Qt)) + (1/cp.BETA)*(invgamma-invlambdat);
 	/*
          i hope:
          invlambdat = float (1/lam)
@@ -167,10 +185,7 @@ int main(int argc, char const* argv[]){
          BETA =     float (beta)
          invlambda = float (1/gamma) - outflux in nanoseconds
          */
-	printf("ep: %f\n", cp.EPSILON);
-	printf("Qt %f, Q* %f,  firs: %f\nsecond: %f\n", Qt, cp.TARGETBUF, cp.EPSILON*(Qt-cp.TARGETBUF), cp.BETA*(invgamma - invlambdat));
-	invlambdat = invlambdat + cp.EPSILON*(Qt-cp.TARGETBUF)+cp.BETA*(invgamma -invlambdat);	
-	//invlambdat = 1/(1/invlambdat + cp.EPSILON*(cp.TARGETBUF-Qt)+cp.BETA*(1/invgamma - 1/invlambdat));
+        invlambdat = invlambdat + cp.EPSILON*(Qt-cp.TARGETBUF)+cp.BETA*(invgamma -invlambdat);	
         if (old != invlambdat) {
 		printf("%f vs. %f\n", old, invlambdat);
 		sendto(UDPsock, &invlambdat, sizeof(float), 0, (struct sockaddr *)&UDPaddr, lenUa);
