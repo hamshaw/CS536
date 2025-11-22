@@ -8,4 +8,4 @@ objects:
 	gcc -c coolmuss.c -o coolmuss.o
 	gcc -c coolmusc.c -o coolmusc.o
 clean:
-	find . -type f ! -name "*.au" ! -name "*.dat" ! -name "README" ! -name "*.c" ! -name "*.h" ! -name "Makefile" -delete
+	find . -type f ! -name "*.au" ! -name "README" ! -name "*.c" ! -name "*.h" ! -name "Makefile" -delete

@@ -39,8 +39,8 @@ int main(int argc, char const* argv[]){
                                      //change logfile[12] = client number for each new client
 
     size_t lenlf = strlen(logfile);
-    char filename[20] = {'\0'};
-    memcpy(filename, logfile, lenlf);
+    char dfilename[20] = {'\0'};
+    memcpy(dfilename, logfile, lenlf);
     const char * serverIP = argv[3];
     unsigned short pn = atoi(argv[4]);
 
@@ -124,8 +124,8 @@ int main(int argc, char const* argv[]){
             
 
             FILE *fp;
-            filename[lenlf] = (char)sessionindex;
-            fp = fopen(filename, "w");
+            dfilename[lenlf] = (char)sessionindex;
+            fp = fopen(dfilename, "w");
             //socket() - UDP
             int sdUDP;
             if ((sdUDP = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
@@ -169,7 +169,7 @@ int main(int argc, char const* argv[]){
             
             //How many packets we sending?
             int numPackets = (int)ceil(filesize/clients[sessionindex].blocksize);
-            printf("sending %d packets...\n", numPackets);
+            printf("sending %d packets...%f\n", numPackets, filesize);
 	    int i = 0;
             struct timeval *timestamps = calloc(numPackets, sizeof(struct timeval));
             float *ivls = calloc(numPackets, sizeof(float));
@@ -211,7 +211,6 @@ int main(int argc, char const* argv[]){
                     timestamps[i] = now;
                     ivls[i] = invlambda;
                     fprintf(fp, "%f\t%f\n", msec_since_mark(), invlambda);
-                    printf("got new sending rate from client, invlambda = %f\n@ time: %ld\n", invlambda, now.tv_usec);
                 }
             }//end sending and receiving while()
 	    printf("done sending to client.\n");
