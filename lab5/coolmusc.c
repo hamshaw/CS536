@@ -14,7 +14,7 @@
 #include <time.h>
 #include <sys/ioctl.h>
 #include <pthread.h>
-int CONTROLLAW = 0;
+int CONTROLLAW = 1;
 //client
 int pipefd[2];
 struct timespec marker;
@@ -178,7 +178,13 @@ int main(int argc, char const* argv[]){
         
 	printf("Qt: %d \n", Qt);
         if (CONTROLLAW == 0) invlambdat = invlambdat + cp.EPSILON*(Qt-cp.TARGETBUF)+cp.BETA*(invgamma -invlambdat);	
-        if (old != invlambdat) {
+        if (CONTROLLAW == 1){
+		float choose = Qt - cp.TARGETBUF;
+		if (choose < 0) invlambdat -= cp.EPSILON;
+		if (choose > 0) invlambdat = cp.BETA*invlambdat;
+	}
+
+	if (old != invlambdat) {
 		printf("%f vs. %f\n", old, invlambdat);
 		sendto(UDPsock, &invlambdat, sizeof(float), 0, (struct sockaddr *)&UDPaddr, lenUa);
         	fprintf(fp, "%f\t%f\n", msec_since_mark(), invlambdat);
