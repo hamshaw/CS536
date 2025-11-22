@@ -7,7 +7,7 @@
 #endif
 struct client_params{
     unsigned short BLOCKSIZE;
-    unsigned long BUFFERSIZE;
+    long BUFFERSIZE;
     float TARGETBUF;
     float INVLAMBDA;
     float EPSILON;

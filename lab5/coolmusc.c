@@ -59,7 +59,11 @@ int main(int argc, char const* argv[]){
     float invgamma = atof(argv[4]);//in MSEC
     const char * paramsFile = argv[5];//same string problem
     const char * datalogFile = argv[6];//same string problem
-   
+    
+
+    FILE *fp;
+    fp = fopen(datalogFile, "w");
+
     //read params file
     struct client_params cp;
     memset(&cp, 0, sizeof(cp));
@@ -158,6 +162,8 @@ int main(int argc, char const* argv[]){
     float invlambdat = invgamma;//prolly not int, check
     char buffer[cp.BLOCKSIZE];
     float old = invgamma;
+    set_mark();
+    fprintf(fp, "%f\t%f\n", msec_since_mark(), invlambdat);
     int Qt;
     while (1){
 	int amt;
@@ -173,23 +179,12 @@ int main(int argc, char const* argv[]){
         
         write(pipefd[1], buffer, cp.BLOCKSIZE);
         
-	//get stats, send ack!!
-        //check unread data in pipe (aka Q(t))
-
-	/*
-         i hope:
-         invlambdat = float (1/lam)
-         EPSILON = float (epsilon)
-         TARGETBUF= any (Q* in Bytes)
-         Qt =       amy (Q(t) in bytes) ARE THESE SUPPOSED TO BE PERCENTAGES????
-         BETA =     float (beta)
-         invlambda = float (1/gamma) - outflux in nanoseconds
-         */
+	printf("Qt: %d \n", Qt);
         invlambdat = invlambdat + cp.EPSILON*(Qt-cp.TARGETBUF)+cp.BETA*(invgamma -invlambdat);	
         if (old != invlambdat) {
 		printf("%f vs. %f\n", old, invlambdat);
 		sendto(UDPsock, &invlambdat, sizeof(float), 0, (struct sockaddr *)&UDPaddr, lenUa);
-        	printf("sending server new invlamda: %f\n", invlambdat);
+        	fprintf(fp, "%f\t%f\n", msec_since_mark(), invlambdat);
 		old = invlambdat;
 	}
 	if (amt <cp.BLOCKSIZE) break;
@@ -203,6 +198,7 @@ int main(int argc, char const* argv[]){
         printf("playing...\n");
     }
     pthread_cancel(pt);
+    fclose(fp);
     printf("done\n");
 }//end main
 
