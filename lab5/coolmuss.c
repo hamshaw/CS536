@@ -16,6 +16,16 @@
 #include "coolmuss.h"
 #include <math.h>
 //server
+struct timespec marker;
+void set_mark(void){
+        clock_gettime(CLOCK_MONOTONIC, &marker);
+}
+double msec_since_mark(void){
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        return (now.tv_sec - marker.tv_sec)*1000 + (now.tv_nsec - marker.tv_nsec)/1000000;
+}
+
 int main(int argc, char const* argv[]){
     if (argc != 5){
             printf("Expected: >>coolmuss invlambda datalog.dat serberIP serverPort\n");
@@ -25,8 +35,12 @@ int main(int argc, char const* argv[]){
     char As = 'A';
     //organize arguements
     float invlambda = atof(argv[1]);//in miliseconds
-    char logfile[] = "datalog.dat.1";//just hard coding this in bec who cares
+    const char * logfile = argv[2];//just hard coding this in bec who cares
                                      //change logfile[12] = client number for each new client
+
+    size_t lenlf = strlen(logfile);
+    char filename[20] = {'\0'};
+    memcpy(filename, logfile, lenlf);
     const char * serverIP = argv[3];
     unsigned short pn = atoi(argv[4]);
 
@@ -109,7 +123,9 @@ int main(int argc, char const* argv[]){
         if (pid ==0){//child code
             
 
-
+            FILE *fp;
+            filename[lenlf] = (char)sessionindex;
+            fp = fopen(filename, "w");
             //socket() - UDP
             int sdUDP;
             if ((sdUDP = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
@@ -169,6 +185,9 @@ int main(int argc, char const* argv[]){
             struct timespec sleeptime;
             sleeptime.tv_sec = 0;
             //sleeptime.tv_nsec = invlambda;
+            
+            set_mark();
+            fprintf(fp, "%f\t%f\n", msec_since_mark(), invlambda);
 
             //while()/select()
             while(i < numPackets){//something
@@ -183,7 +202,6 @@ int main(int argc, char const* argv[]){
                 }
                 if (ready == 0){//we dont have an updated sending rate
                     nanosleep(&sleeptime, NULL);
-                    printf("sending block...\n");
 		    sendto(sdUDP, &(buffer[i*clients[sessionindex].blocksize]), clients[sessionindex].blocksize, 0, (struct sockaddr *)&childaddr, lenca);
                     i++;
                 }else if (FD_ISSET(sdUDP, &readfds)){//we have an updated sending rate
@@ -192,6 +210,7 @@ int main(int argc, char const* argv[]){
                     gettimeofday(&now, NULL);
                     timestamps[i] = now;
                     ivls[i] = invlambda;
+                    fprintf(fp, "%f\t%f\n", msec_since_mark(), invlambda);
                     printf("got new sending rate from client, invlambda = %f\n@ time: %ld\n", invlambda, now.tv_usec);
                 }
             }//end sending and receiving while()

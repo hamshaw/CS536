@@ -163,7 +163,7 @@ int main(int argc, char const* argv[]){
     char buffer[cp.BLOCKSIZE];
     float old = invgamma;
     set_mark();
-    fprintf(fp, "%f\t%f\n", msec_since_mark(), invlambdat);
+    fprintf(fp, "%f\t%f\n", msec_since_mark(), 0.0);
     int Qt;
     while (1){
 	int amt;
@@ -176,7 +176,6 @@ int main(int argc, char const* argv[]){
         
         write(pipefd[1], buffer, cp.BLOCKSIZE);
         
-	printf("Qt: %d \n", Qt);
         if (CONTROLLAW == 0) invlambdat = invlambdat + cp.EPSILON*(Qt-cp.TARGETBUF)+cp.BETA*(invgamma -invlambdat);	
         if (CONTROLLAW == 1){
 		float choose = Qt - cp.TARGETBUF;
@@ -185,9 +184,8 @@ int main(int argc, char const* argv[]){
 	}
 
 	if (old != invlambdat) {
-		printf("%f vs. %f\n", old, invlambdat);
 		sendto(UDPsock, &invlambdat, sizeof(float), 0, (struct sockaddr *)&UDPaddr, lenUa);
-        	fprintf(fp, "%f\t%f\n", msec_since_mark(), invlambdat);
+        	fprintf(fp, "%f\t%d\n", msec_since_mark(), Qt);
 		old = invlambdat;
 	}
 	if (amt <cp.BLOCKSIZE) break;
