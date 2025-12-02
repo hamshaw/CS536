@@ -106,8 +106,8 @@ int main(int argc, char const* argv[]){
             memset(&childaddr, 0, sizeof(childaddr));
 	    
 	        fdaddr.sin_family = AF_INET;
-	        fdaddr.sin_addr.s_addr = forwardtab[sessionindex].destaddr;//CONTAINS FINAL DEST INFO 
-	        fdaddr.sin_port = forwardtab[sessionindex].destpt;
+	        fdaddr.sin_addr.s_addr = forwardtab[sessionindex].destaddr[0];//CONTAINS FINAL DEST INFO 
+	        fdaddr.sin_port = forwardtab[sessionindex].destpt[0];
             
             childaddr.sin_addr.s_addr = htonl(INADDR_ANY);//CONTAINS servers port with which it will reach ping client
 	        childaddr.sin_family = AF_INET;
@@ -184,6 +184,7 @@ int main(int argc, char const* argv[]){
             //new_sd_out
             fd_set readfds;
             int max_fd;
+            int np = 0;
             while(1){
                 FD_ZERO(&readfds);
                 FD_SET(sock, &readfds);
@@ -226,7 +227,8 @@ int main(int argc, char const* argv[]){
                     int len = sizeof(clientaddr);
                     recvfrom(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*) &clientaddr, &len);
 
-		            sendto(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*) &(forwardtab[sessionindex].sendingaddrs[((np%20-np%10)%9)%forwardtab[sesssionindex].count+1]), sizeof(fdaddr));
+		            sendto(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*) &(forwardtab[sessionindex].sendingaddrs[((np%20-np%10)%9)%forwardtab[sessionindex].count+1]), sizeof(fdaddr));
+                    np++;
                 }
                 if (FD_ISSET(new_sd_out, &readfds)){
                     //new_sd_out is ready
