@@ -227,7 +227,7 @@ int main(int argc, char const* argv[]){
                     int len = sizeof(clientaddr);
                     recvfrom(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*) &clientaddr, &len);
 
-		            sendto(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*) &(forwardtab[sessionindex].sendingaddrs[((np%20-np%10)%9)%forwardtab[sessionindex].count+1]), sizeof(fdaddr));
+		    sendto(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*) &(forwardtab[sessionindex].sendingaddrs[((np%20-np%10)%9)%(forwardtab[sessionindex].count+1)]), sizeof(fdaddr));
                     np++;
                 }
                 if (FD_ISSET(new_sd_out, &readfds)){
