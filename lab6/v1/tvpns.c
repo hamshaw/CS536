@@ -125,7 +125,7 @@ int main(int argc, char const* argv[]){
                     write(sock, secret_port, 6+sizeof(unsigned short));//sending client port number
                     break;
                 }
-                printf("failed to bind to %d\n", port2);
+                //printf("failed to bind to %d\n", port2);
                 port2++;
             }
             
@@ -149,7 +149,7 @@ int main(int argc, char const* argv[]){
                     forwardtab[sessionindex].tunnelpt = port;
                     break;
                 }
-                printf("out - failed to bind to %d\n", port);
+                //printf("out - failed to bind to %d\n", port);
                 port++;
             }
 	        struct sockaddr_in clientaddr;
@@ -170,6 +170,7 @@ int main(int argc, char const* argv[]){
                     forwardtab[sessionindex].sourceaddr = 0;//canceling the new entry.
                     forwardtab[sessionindex].count = 0;
                     shouldfork = 0;
+		    break;
                 }
             }
             if (shouldfork == 0) continue;
@@ -200,7 +201,7 @@ int main(int argc, char const* argv[]){
                     printf("select failed\n");
                     break;
                 }
-		        printf("select success\n");
+		        //printf("select success\n");
                 if (FD_ISSET(sock, &readfds)){
                     //sd is ready
 		            printf("recieved something from tcp\n");
@@ -222,7 +223,7 @@ int main(int argc, char const* argv[]){
                 }
                 if (FD_ISSET(new_sd, &readfds)){
                     //new_sd is ready
-		            printf("got a message from client\n");
+		            //printf("got a message from client\n");
                     char buffer[100] = {0};
                     int len = sizeof(clientaddr);
                     recvfrom(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*) &clientaddr, &len);
@@ -232,12 +233,13 @@ int main(int argc, char const* argv[]){
                 }
                 if (FD_ISSET(new_sd_out, &readfds)){
                     //new_sd_out is ready
-		            printf("got a message from server\n");
+		            //printf("got a message from server\n");
                     char buffer[100] = {0};
                     int len = sizeof(fdaddr);
                     recvfrom(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL);//&fdaddr, &len);
                     sendto(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr));
-                }
+		}
+		printf("%d, ", np);
             }//ends the childs big while for select
             printf("child done\n");
 	    exit(0);
