@@ -1,0 +1,8 @@
+This application implements a tunneling system as a toy VPN.
+
+To use:
+    run make on the terminal
+    run the server (tvpns) with requested parameters
+    run the client (tvpnc) with requested parameters
+    the client will provide a port number for which an application can contact the tunneling server
+    run the server and client with the client providing the TUNELLING servers IP address and port number
