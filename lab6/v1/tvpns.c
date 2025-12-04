@@ -233,7 +233,7 @@ int main(int argc, char const* argv[]){
                 }
                 if (FD_ISSET(new_sd_out, &readfds)){
                     np++;
-			printf("%d, ", np);
+			printf("%d\n", np);
 			//new_sd_out is ready
 		            //printf("got a message from server\n");
                     char buffer[100] = {0};
