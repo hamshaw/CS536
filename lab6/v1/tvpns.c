@@ -223,23 +223,25 @@ int main(int argc, char const* argv[]){
                 }
                 if (FD_ISSET(new_sd, &readfds)){
                     //new_sd is ready
-		            //printf("got a message from client\n");
+		           // printf("got a message from client\n");
                     char buffer[100] = {0};
                     int len = sizeof(clientaddr);
                     recvfrom(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*) &clientaddr, &len);
 
 		    sendto(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*) &(forwardtab[sessionindex].sendingaddrs[((np%20-np%10)%9)%(forwardtab[sessionindex].count+1)]), sizeof(fdaddr));
-                    np++;
+                    //np++;
                 }
                 if (FD_ISSET(new_sd_out, &readfds)){
-                    //new_sd_out is ready
+                    np++;
+			printf("%d, ", np);
+			//new_sd_out is ready
 		            //printf("got a message from server\n");
                     char buffer[100] = {0};
                     int len = sizeof(fdaddr);
                     recvfrom(new_sd_out, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL);//&fdaddr, &len);
                     sendto(new_sd, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr));
 		        }
-		        printf("%d, ", np);
+		        //printf("%d, ", np);
             }//ends the childs big while for select
             printf("child done\n");
 	    exit(0);
